@@ -6,7 +6,7 @@ P_CACHE = __pycache__
 
 PT_CACHE = .pytest_cache
 
-.PHONY: install run norming norming_mp lint clean
+.PHONY: install run norming norming_mp lint clean copy_data unzip_data
 
 install:
 	uv sync
@@ -29,3 +29,9 @@ clean:
 
 debug:
 	uv run python -m pdb $(SRC)
+
+copy_data:
+	cp ~/Downloads/maps.tar.gz .
+
+unzip_data:
+	tar -xvf *.tar.gz maps
