@@ -107,6 +107,7 @@ class FlagManager:
         values.append(args.launch_H1)
         values.append(args.launch_H2)
         values.append(args.launch_H3)
+        values.append(args.graph)
 
         return values
 
@@ -119,13 +120,22 @@ class FlagManager:
         return True
 
     def get_path_from_flag(self) -> str:
-        self
         v = self._get_args_values()
         path = ""
 
         self._flag_check(v)
         new_v = [val for val in v if val != "None"]
         for val in new_v:
-            if val != "graphed":
+            if val != "graphed" and val != "not_graph":
                 path = val
         return path
+
+    def is_graphed(self) -> bool:
+        v = self._get_args_values()
+
+        self._flag_check(v)
+        new_v = [val for val in v if val == "graphed"]
+        print(new_v)
+        if len(new_v) == 1:
+            return True
+        return False
