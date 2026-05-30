@@ -1,11 +1,11 @@
-from utils import Parsing
+from utils import FlagManager
 
 
 def main() -> None:
     try:
-        parsing = Parsing()
+        parsing = FlagManager()
         parsing.init_args(None)
-        print(parsing.get_args_values())
+        print(parsing._get_args_values())
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")

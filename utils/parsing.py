@@ -1,7 +1,7 @@
 import argparse
 
 
-class Parsing:
+class FlagManager:
     def __init__(self):
         self.args: argparse.Namespace | None = None
 
