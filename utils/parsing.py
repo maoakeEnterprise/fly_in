@@ -112,9 +112,14 @@ class FlagManager:
                              " flag up flag up should be one")
         return True
 
-    def get_flag_value(self) -> str:
+    def get_path_from_flag(self) -> str:
         self
         v = self._get_args_values()
+        path = ""
+
         self._flag_check(v)
         new_v = [val for val in v if val != "None"]
-        return new_v[0]
+        for val in new_v:
+            if val != "graphed":
+                path = val
+        return path

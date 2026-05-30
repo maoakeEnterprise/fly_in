@@ -26,5 +26,5 @@ class TestFlagManager:
     def test_flag_value(self) -> None:
         parsing = FlagManager()
         parsing.init_args(["--launch_H3"])
-        v = parsing.get_flag_value()
+        v = parsing.get_path_from_flag()
         assert v == "maps/hard/03*"
