@@ -104,7 +104,7 @@ class FlagManager:
 
         return values
 
-    def _is_one_flag(self, values: list[str]) -> bool:
+    def _flag_check(self, values: list[str]) -> bool:
         none_count = values.count("None")
 
         if none_count != 9:
@@ -115,6 +115,6 @@ class FlagManager:
     def get_flag_value(self) -> str:
         self
         v = self._get_args_values()
-        self._is_one_flag(v)
+        self._flag_check(v)
         new_v = [val for val in v if val != "None"]
         return new_v[0]
