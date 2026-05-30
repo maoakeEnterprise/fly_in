@@ -6,6 +6,8 @@ P_CACHE = __pycache__
 
 PT_CACHE = .pytest_cache
 
+PARS_T = tests/test_parsing.py
+
 .PHONY: install run norming norming_mp lint clean copy_data unzip_data
 
 install:
@@ -13,6 +15,9 @@ install:
 
 run:
 	uv run python -m src
+
+test_parsing:
+	PYTHONPATH=. uv run pytest tests/test_parsing.py
 
 norming:
 	watch uv run flake8 $(SRC)
