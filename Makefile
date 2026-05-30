@@ -1,12 +1,16 @@
 SRC = src/__main__.py
 
+UTILS = utils/flag_manager.py utils/parsing.py
+
 MP_CACHE = .mypy_cache
 
 P_CACHE = __pycache__
 
 PT_CACHE = .pytest_cache
 
-PARS_T = tests/test_parsing.py
+TESTS = tests/test_flag_manager.py
+
+FLAG_T = tests/test_flag_manager.py
 
 .PHONY: install run norming norming_mp lint clean copy_data unzip_data
 
@@ -17,13 +21,13 @@ run:
 	uv run python -m src --graph --launch_H3
 
 test_parsing:
-	PYTHONPATH=. uv run pytest tests/test_parsing.py
+	PYTHONPATH=. uv run pytest $(FLAG_T)
 
 norming:
-	watch uv run flake8 $(SRC)
+	watch uv run flake8 $(SRC) $(UTILS) $(TESTS)
 
 norming_mp:
-	watch uv run mypy $(SRC)
+	watch uv run mypy $(SRC) $(UTILS) $(TESTS)
 
 lint:
 	uv run flake8 . --exclude=./.venv
