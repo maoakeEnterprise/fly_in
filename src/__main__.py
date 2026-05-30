@@ -3,10 +3,10 @@ from utils import FlagManager
 
 def main() -> None:
     try:
-        parsing = FlagManager()
-        parsing.init_args(None)
-        path_file = parsing.get_path_from_flag()
-        is_graph = parsing.is_graphed()
+        flag_manager = FlagManager()
+        flag_manager.init_args(None)
+        path_file = flag_manager.get_path_from_flag()
+        is_graph = flag_manager.is_graphed()
 
         print(path_file)
         print(is_graph)
