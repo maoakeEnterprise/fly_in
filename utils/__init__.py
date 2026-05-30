@@ -1,4 +1,4 @@
-from utils.parsing import FlagManager
+from utils.flag_manager import FlagManager
 
 __version__ = "1.0.0"
 __author__ = "mteriier"
