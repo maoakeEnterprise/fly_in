@@ -1,4 +1,4 @@
-from utils import FlagManager
+from utils import FlagManager, Parsing
 
 
 def main() -> None:
@@ -6,10 +6,11 @@ def main() -> None:
         flag_manager = FlagManager()
         flag_manager.init_args(None)
         path_file = flag_manager.get_path_from_flag()
+        parsing = Parsing(path_file)
         is_graph = flag_manager.is_graphed()
 
-        print(path_file)
         print(is_graph)
+        parsing.load_data_from_file()
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")
