@@ -2,7 +2,7 @@ import argparse
 
 
 class FlagManager:
-    def __init__(self):
+    def __init__(self) -> None:
         self.args: argparse.Namespace | None = None
 
     def init_args(self, arglist: list[str] | None) -> None:
@@ -96,6 +96,9 @@ class FlagManager:
     def _get_args_values(self) -> list[str]:
         values: list[str] = []
         args = self.args
+
+        if args is None:
+            return values
 
         values.append(args.default_launch)
         values.append(args.launch_E1)
