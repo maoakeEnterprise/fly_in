@@ -80,6 +80,12 @@ class FlagManager:
             default="None",
             const="maps/hard/03*",
         )
+        parser.add_argument(
+            "--graph",
+            nargs="?",
+            default="not_graph",
+            const="graphed"
+        )
 
         if arglist is not None:
             args = parser.parse_args(arglist)
