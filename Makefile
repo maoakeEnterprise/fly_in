@@ -14,7 +14,7 @@ install:
 	uv sync
 
 run:
-	uv run python -m src
+	uv run python -m src --launch_M1
 
 test_parsing:
 	PYTHONPATH=. uv run pytest tests/test_parsing.py
