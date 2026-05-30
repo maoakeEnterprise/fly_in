@@ -10,7 +10,7 @@ def main() -> None:
         is_graph = flag_manager.is_graphed()
 
         print(is_graph)
-        parsing.load_data_from_file()
+        parsing._print_data()
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")
