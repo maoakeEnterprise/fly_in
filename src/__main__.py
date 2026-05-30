@@ -7,8 +7,14 @@ def main() -> None:
         parsing.init_args(None)
         print(parsing.get_args_values())
         print("Hello from fly-in!")
-    except Exception as e:
-        print(f"{e}")
+    except ValueError as e:
+        print("=======VALUE==ERROR========")
+        print(f"Message : {e}")
+        print("===========================")
+    except (FileNotFoundError, PermissionError) as e:
+        print("=======FILE===ERROR========")
+        print(f"Message : {e}")
+        print("===========================")
 
 
 if __name__ == "__main__":

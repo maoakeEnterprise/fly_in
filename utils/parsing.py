@@ -104,10 +104,17 @@ class Parsing:
 
         return values
 
-    def _is_one_flag(self) -> bool:
-        values = self._get_args_values()
+    def _is_one_flag(self, values: list[str]) -> bool:
         none_count = values.count("None")
 
-        if none_count < 9:
-            raise ValueError("There is too much flag up should be one")
+        if none_count != 9:
+            raise ValueError("There is too much or no"
+                             " flag up flag up should be one")
         return True
+
+    def get_flag_value(self) -> str:
+        self
+        v = self._get_args_values()
+        self._is_one_flag(v)
+        new_v = [val for val in v if val != "None"]
+        return new_v[0]
