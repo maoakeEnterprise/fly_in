@@ -138,7 +138,6 @@ class FlagManager:
 
         self._flag_check(v)
         new_v = [val for val in v if val == "graphed"]
-        print(new_v)
         if len(new_v) == 1:
             return True
         return False
