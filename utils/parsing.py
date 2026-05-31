@@ -20,3 +20,12 @@ class Parsing():
         self._load_data_from_file()
         for line in self.data:
             print(line)
+
+    def _ignore_hashtag(self, line: str) -> bool:
+        line_striped = line.strip()
+        if line_striped.startswith("#"):
+            return True
+        return False
+
+    def parsing_data(self) -> None:
+        self._load_data_from_file()
