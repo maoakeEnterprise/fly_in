@@ -58,3 +58,68 @@ class TestParsing:
         ]
         assert parsing._unique_hub(maze_config,
                                    HubName.START_HUB.value) is True
+
+    def test_unique_hub1(self) -> None:
+        parsing = Parsing("titi")
+        maze_config = [
+            "# Easy Level 1: Simple linear path",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "start_hub: start 0 0 [color=green]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._unique_hub(maze_config,
+                                   HubName.START_HUB.value) is False
+
+    def test_len_split_data(self) -> None:
+        parsing = Parsing("titi")
+        maze_config = [
+            "# Easy Level 1: Simple linear path",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "start_hub: start 0 0 [color=green]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._is_len_split_two_point(maze_config) is True
+
+    def test_len_split_data1(self) -> None:
+        parsing = Parsing("titi")
+        maze_config = [
+            "# Easy Level 1: Simple linear path:",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "start_hub: start 0 0 [color=green]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._is_len_split_two_point(maze_config) is False
+
+    def test_key_valid(self) -> None:
+        parsing = Parsing("titi")
+        maze_config = [
+            "# Easy Level 1: Simple linear path:",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "start_hub: start 0 0 [color=green]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._is_key_valid(maze_config) is True

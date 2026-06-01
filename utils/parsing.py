@@ -8,6 +8,14 @@ class HubName(Enum):
     END_HUB = "end_hub"
 
 
+class KeyName(Enum):
+    HUB = "hub"
+    START_HUB = "start_hub"
+    END_HUB = "end_hub"
+    CONNECTION = "connection"
+    NB_DRONES = "nb_drones"
+
+
 class Parsing():
     def __init__(self, path: str) -> None:
         self.path = path
@@ -69,10 +77,45 @@ class Parsing():
                 return False
         return True
 
+    def _is_len_split_two_point(self, data: list[str]) -> bool:
+        for line in data:
+            tab_l = line.split(":")
+            if len(tab_l) != 2:
+                return False
+        return True
+
+    def _get_main_keys(self, data: list[str]) -> list[str]:
+        keys = [line.split(":")[0] for line in data]
+        return keys
+
+    def _is_key_valid(self, data: list[str]) -> bool:
+        keys = self._get_main_keys(data)
+        verif_key = {
+            KeyName.HUB.value,
+            KeyName.START_HUB.value,
+            KeyName.END_HUB.value,
+            KeyName.CONNECTION.value,
+            KeyName.NB_DRONES.value
+        }
+        for key in keys:
+            if self._ignore_hashtag(key):
+                continue
+            if self._skip_line(key):
+                continue
+            if key not in verif_key:
+                return False
+        return True
+
     def parsing_data(self) -> None:
         self._load_data_from_file()
         index = 0
         index_com = 1
+        if not self._unique_hub(self.data, HubName.START_HUB.value):
+            raise ValueError("Wrong format in the file")
+        if not self._unique_hub(self.data, HubName.END_HUB.value):
+            raise ValueError("Wrong format in txhe file")
+        if not self._is_len_split_two_point(self.data):
+            raise ValueError("Wrong format in the file")
         for line in self.data:
             if self._skip_line(line):
                 index += 1
