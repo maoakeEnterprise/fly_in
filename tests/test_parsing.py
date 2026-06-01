@@ -1,4 +1,4 @@
-from utils import Parsing
+from utils import Parsing, HubName
 
 
 class TestParsing:
@@ -42,3 +42,19 @@ class TestParsing:
         line = "nb_drones: zi"
         parsing = Parsing("titi")
         assert parsing._first_line(line, 0) is False
+
+    def test_unique_hub(self) -> None:
+        parsing = Parsing("titi")
+        maze_config = [
+            "# Easy Level 1: Simple linear path",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._unique_hub(maze_config,
+                                   HubName.START_HUB.value) is True

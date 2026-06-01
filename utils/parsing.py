@@ -1,4 +1,11 @@
 from glob import glob
+from enum import Enum
+
+
+class HubName(Enum):
+    HUB = "hub"
+    START_HUB = "start_hub"
+    END_HUB = "end_hub"
 
 
 class Parsing():
@@ -32,6 +39,8 @@ class Parsing():
             return False
         line_strip = line.strip()
         tab_split = line_strip.split(":")
+        if len(tab_split) != 2:
+            return False
         line_number = tab_split[1].strip()
         if not line_number.isdigit():
             return False
@@ -47,6 +56,18 @@ class Parsing():
         if line_strip == "":
             return True
         return False
+
+    def _unique_hub(self, data: list[str], name_hub: str) -> bool:
+        len_nh = 0
+        for line in data:
+            tab_l = line.split(":")
+            new_l = tab_l[0].strip()
+            if not new_l.startswith(name_hub) and name_hub in new_l:
+                return False
+            len_nh += line.count(name_hub)
+            if len_nh > 1:
+                return False
+        return True
 
     def parsing_data(self) -> None:
         self._load_data_from_file()
