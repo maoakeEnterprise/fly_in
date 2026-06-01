@@ -28,8 +28,13 @@ class Parsing():
         return False
 
     def _first_line(self, line: str, index: int) -> bool:
+        if index != 0:
+            return False
         line_strip = line.strip()
         tab_split = line_strip.split(":")
+        line_number = tab_split[1].strip()
+        if not line_number.isdigit():
+            return False
         number = int(tab_split[1])
         if tab_split[0] != "nb_drones":
             return False
