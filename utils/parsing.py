@@ -1,5 +1,6 @@
 from glob import glob
 from enum import Enum
+import re
 
 
 class HubName(Enum):
@@ -92,8 +93,46 @@ class Parsing():
         keys = [line.split(":")[0] for line in data]
         return keys
 
-    def _is_key_valid(self, data: list[str]) -> bool:
+    def _unique_name_hub(self, data: list[str]) -> tuple[bool, int]:
+        names: set = {}
+        index = 0
+        regex = r"(\w+)"
+        for line in data:
+            if self._ignore_hashtag(line):
+                index += 1
+                continue
+            if self._skip_line(line):
+                index += 1
+                continue
+            line_s = line.split(":")
+            if len(line_s) != 2:
+                return (False, index)
+        return (True, index)
+
+    def _get_name_in_line(line: str, index: int) -> str:
+        line_s = line.split(":")
+        name: str = ""
+        if len(line_s) != 2:
+            raise ValueError(f"Format is wrong at the line {index}")
+        new_line = line_s[1].strip()
+        data = new_line.split(" ")
+        for word in data:
+            name = word
+            break
+        return name
+
+    def _get_coord_in_line(line: str, index: int) -> tuple[int, int]:
+        pass
+
+    def _get_metadata_in_line(line: str, index: int) -> str:
+        pass
+
+    def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
+        pass
+
+    def _is_key_valid(self, data: list[str]) -> tuple[bool, int]:
         keys = self._get_main_keys(data)
+        index = 0
         verif_key = {
             KeyName.HUB.value,
             KeyName.START_HUB.value,
@@ -107,8 +146,9 @@ class Parsing():
             if self._skip_line(key):
                 continue
             if key not in verif_key:
-                return False
-        return True
+                return (False, index)
+            index += 1
+        return (True, index)
 
     def parsing_data(self) -> None:
         self._load_data_from_file()
@@ -118,6 +158,7 @@ class Parsing():
         error_log.append(self._unique_hub(self.data, HubName.START_HUB.value))
         error_log.append(self._unique_hub(self.data, HubName.END_HUB.value))
         error_log.append(self._is_len_split_two_point(self.data))
+        error_log.append(self._is_key_valid(self.data))
         for line in self.data:
             if self._skip_line(line):
                 index += 1

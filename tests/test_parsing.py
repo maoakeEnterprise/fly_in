@@ -122,4 +122,7 @@ class TestParsing:
             "connection: waypoint1-waypoint2",
             "connection: waypoint2-goal"
         ]
-        assert parsing._is_key_valid(maze_config) is True
+        assert parsing._is_key_valid(maze_config)[0] is True
+
+    def test_get_name_in(self) -> None:
+        pass
