@@ -65,24 +65,28 @@ class Parsing():
             return True
         return False
 
-    def _unique_hub(self, data: list[str], name_hub: str) -> bool:
+    def _unique_hub(self, data: list[str], name_hub: str) -> tuple[bool, int]:
         len_nh = 0
+        index = 0
         for line in data:
             tab_l = line.split(":")
             new_l = tab_l[0].strip()
             if not new_l.startswith(name_hub) and name_hub in new_l:
-                return False
+                return (False, index)
             len_nh += line.count(name_hub)
             if len_nh > 1:
-                return False
-        return True
+                return (False, index)
+            index += 1
+        return (True, index)
 
-    def _is_len_split_two_point(self, data: list[str]) -> bool:
+    def _is_len_split_two_point(self, data: list[str]) -> tuple[bool, int]:
+        index = 0
         for line in data:
             tab_l = line.split(":")
             if len(tab_l) != 2:
-                return False
-        return True
+                return (False, index)
+            index += 1
+        return (True, index)
 
     def _get_main_keys(self, data: list[str]) -> list[str]:
         keys = [line.split(":")[0] for line in data]
@@ -110,12 +114,10 @@ class Parsing():
         self._load_data_from_file()
         index = 0
         index_com = 1
-        if not self._unique_hub(self.data, HubName.START_HUB.value):
-            raise ValueError("Wrong format in the file")
-        if not self._unique_hub(self.data, HubName.END_HUB.value):
-            raise ValueError("Wrong format in txhe file")
-        if not self._is_len_split_two_point(self.data):
-            raise ValueError("Wrong format in the file")
+        error_log: list[tuple[bool, int]] = []
+        error_log.append(self._unique_hub(self.data, HubName.START_HUB.value))
+        error_log.append(self._unique_hub(self.data, HubName.END_HUB.value))
+        error_log.append(self._is_len_split_two_point(self.data))
         for line in self.data:
             if self._skip_line(line):
                 index += 1
@@ -125,6 +127,7 @@ class Parsing():
                 continue
             if index == 0:
                 if not self._first_line(line, index):
-                    raise ValueError("TEST")
-        # do it something here
+                    error_log.append((False, index))
+            else:
+                pass
             index += 1

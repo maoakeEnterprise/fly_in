@@ -57,7 +57,7 @@ class TestParsing:
             "connection: waypoint2-goal"
         ]
         assert parsing._unique_hub(maze_config,
-                                   HubName.START_HUB.value) is True
+                                   HubName.START_HUB.value)[0] is True
 
     def test_unique_hub1(self) -> None:
         parsing = Parsing("titi")
@@ -74,7 +74,7 @@ class TestParsing:
             "connection: waypoint2-goal"
         ]
         assert parsing._unique_hub(maze_config,
-                                   HubName.START_HUB.value) is False
+                                   HubName.START_HUB.value)[0] is False
 
     def test_len_split_data(self) -> None:
         parsing = Parsing("titi")
@@ -90,7 +90,7 @@ class TestParsing:
             "connection: waypoint1-waypoint2",
             "connection: waypoint2-goal"
         ]
-        assert parsing._is_len_split_two_point(maze_config) is True
+        assert parsing._is_len_split_two_point(maze_config)[0] is True
 
     def test_len_split_data1(self) -> None:
         parsing = Parsing("titi")
@@ -106,7 +106,7 @@ class TestParsing:
             "connection: waypoint1-waypoint2",
             "connection: waypoint2-goal"
         ]
-        assert parsing._is_len_split_two_point(maze_config) is False
+        assert parsing._is_len_split_two_point(maze_config)[0] is False
 
     def test_key_valid(self) -> None:
         parsing = Parsing("titi")
