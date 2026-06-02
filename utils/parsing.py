@@ -94,9 +94,8 @@ class Parsing():
         return keys
 
     def _unique_name_hub(self, data: list[str]) -> tuple[bool, int]:
-        names: set = {}
+        names: set[str] = set()
         index = 0
-        regex = r"(\w+)"
         for line in data:
             if self._ignore_hashtag(line):
                 index += 1
@@ -104,27 +103,41 @@ class Parsing():
             if self._skip_line(line):
                 index += 1
                 continue
-            line_s = line.split(":")
-            if len(line_s) != 2:
+            if self._get_first_key(line) == "connection":
+                index += 1
+                continue
+            res = self._get_name_in_line(line, index)
+            name = res[2]
+            if res[0] is False and name in names:
                 return (False, index)
+            names.add(name)
         return (True, index)
 
-    def _get_name_in_line(line: str, index: int) -> str:
+    def _get_first_key(self, line: str) -> str:
         line_s = line.split(":")
+        return line_s[0].strip()
+
+    def _get_name_in_line(self, line: str, index: int
+                          ) -> tuple[bool, int, str]:
+        line_s = line.split(":")
+        regex = r"^(\w+)$"
         name: str = ""
         if len(line_s) != 2:
-            raise ValueError(f"Format is wrong at the line {index}")
+            return (False, index, name)
         new_line = line_s[1].strip()
         data = new_line.split(" ")
         for word in data:
+            res = re.search(regex, word)
+            if res is None:
+                return (False, index, name)
             name = word
             break
-        return name
+        return (True, index, name)
 
-    def _get_coord_in_line(line: str, index: int) -> tuple[int, int]:
+    def _get_coord_in_line(self, line: str, index: int) -> tuple[int, int]:
         pass
 
-    def _get_metadata_in_line(line: str, index: int) -> str:
+    def _get_metadata_in_line(self, line: str, index: int) -> str:
         pass
 
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:

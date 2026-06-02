@@ -125,4 +125,22 @@ class TestParsing:
         assert parsing._is_key_valid(maze_config)[0] is True
 
     def test_get_name_in(self) -> None:
-        pass
+        parsing = Parsing("pipi")
+        line = "start_hub: start 0 0 [color=green]"
+        assert parsing._get_name_in_line(line, 1)[2] == "start"
+
+    def test_unique_name(self) -> None:
+        parsing = Parsing("poop")
+        data = [
+            "# Easy Level 1: Simple linear path:",
+            "nb_drones: 2",
+            "start_hub: start 0 0 [color=green]",
+            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint2 2 0 [color=blue]",
+            "end_hub: goal 3 0 [color=red]",
+            "start_hub: start 0 0 [color=green]",
+            "connection: start-waypoint1",
+            "connection: waypoint1-waypoint2",
+            "connection: waypoint2-goal"
+        ]
+        assert parsing._unique_name_hub(data)[0] is True
