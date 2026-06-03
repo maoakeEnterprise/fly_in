@@ -11,7 +11,7 @@ def main() -> None:
 
         print(is_graph)
         print("===============================")
-        print(parsing._first_line("nb_drones: 23", 0))
+        parsing._print_data()
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")

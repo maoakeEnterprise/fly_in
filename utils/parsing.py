@@ -134,14 +134,49 @@ class Parsing():
             break
         return (True, index, name)
 
-    def _get_coord_in_line(self, line: str, index: int) -> tuple[int, int]:
-        pass
+    def _get_coord_in_line(self, line: str) -> tuple[bool, tuple[int, int]]:
+        regex = r"^[+-]?\d+$"
+        list_int: list[str] = []
+        line_s = line.split(":")
+        if len(line_s) != 2:
+            return (False, (0, 0))
+        new_l = line_s[1].strip()
+        data = new_l.split(" ")
+        for data_s in data:
+            res = re.search(regex, data_s)
+            if res:
+                list_int.append(data_s)
+        if len(list_int) != 2:
+            print(list_int)
+            return (False, (0, 0))
+        return (True, (int(list_int[0]), int(list_int[1])))
 
     def _get_metadata_in_line(self, line: str, index: int) -> str:
         pass
 
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
-        pass
+        coords: set[tuple[int, int]] = set()
+        index = 0
+        for line in data:
+            if self._ignore_hashtag(line):
+                index += 1
+                continue
+            if self._skip_line(line):
+                index += 1
+                continue
+            if self._get_first_key(line) == "connection":
+                index += 1
+                continue
+            if self._get_first_key(line) == "nb_drones":
+                index += 1
+                continue
+            coord = self._get_coord_in_line(line)
+            if coord[0] is False:
+                return (False, index)
+            if coord[1] in coords:
+                return (False, index)
+            coords.add(coord[1])
+        return (True, index)
 
     def _is_key_valid(self, data: list[str]) -> tuple[bool, int]:
         keys = self._get_main_keys(data)
