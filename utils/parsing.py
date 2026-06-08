@@ -151,8 +151,31 @@ class Parsing():
             return (False, (0, 0))
         return (True, (int(list_int[0]), int(list_int[1])))
 
-    def _get_metadata_in_line(self, line: str, index: int) -> str:
-        pass
+    def _get_metadata_in_line(self, line: str) -> tuple[bool, str]:
+        metadata_str: str = ""
+        line = line.strip()
+        match = re.search(r"\s+\[(.*?)\]", line)
+        match_with = re.search(r"\s+(\[.*?\])", line)
+        if match_with:
+            test_metadata_str = match_with.group(1)
+            if not line.endswith(test_metadata_str):
+                return (False, test_metadata_str)
+        if match:
+            metadata_str = match.group(1)
+            metadata_str.strip()
+        return (True, metadata_str)
+
+    def _parse_metadata(self, metadata: str) -> bool:
+        data = metadata.split(" ")
+        regex = r"^\w+$"
+        if regex:
+            return True
+        for tmp in data:
+            k_v = tmp.split("=")
+            if len(k_v) != 2:
+                return False
+            k_v[0]
+        return True
 
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
         coords: set[tuple[int, int]] = set()

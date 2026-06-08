@@ -156,7 +156,7 @@ class TestParsing:
             "# Easy Level 1: Simple linear path:",
             "nb_drones: 2",
             "start_hub: start 0 0 [color=green]",
-            "hub: waypoint1 1 0 [color=blue]",
+            "hub: waypoint1 1 0 [color=blue jojo=test]",
             "hub: waypoint2 2 0 [color=blue]",
             "end_hub: goal 3 0 [color=red]",
             "connection: start-waypoint1",
@@ -164,3 +164,9 @@ class TestParsing:
             "connection: waypoint2-goal"
         ]
         assert parsing._unique_coord_hub(data)[0] is True
+
+    def test_get_metadata(self) -> None:
+        line = "caca du monde: start 0 0 [ test]"
+        parsing = Parsing("pipi")
+        res = parsing._get_metadata_in_line(line)
+        assert res == (True, " test")
