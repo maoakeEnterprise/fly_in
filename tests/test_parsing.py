@@ -170,3 +170,9 @@ class TestParsing:
         parsing = Parsing("pipi")
         res = parsing._get_metadata_in_line(line)
         assert res == (True, " test")
+
+    def test_there_is_md(self) -> None:
+        line = "connection: dead_end3 2"
+        parsing = Parsing("Poop")
+        res = parsing._there_is_metadata(line)
+        assert res is False

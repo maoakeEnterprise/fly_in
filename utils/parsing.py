@@ -17,6 +17,23 @@ class KeyName(Enum):
     NB_DRONES = "nb_drones"
 
 
+class NameMetaData(Enum):
+    ZONE = "zone"
+    COLOR = "color"
+    MAX_D = "max_drones"
+
+
+class NameMetaDataC(Enum):
+    MAX_LINK = "max_link_capacity"
+
+
+class KeyNameZone(Enum):
+    NORMAL = "normal"
+    BLOCKED = "blocked"
+    RESTRICTED = "restricted"
+    PRIORITY = "priority"
+
+
 class Parsing():
     def __init__(self, path: str) -> None:
         self.path = path
@@ -151,6 +168,7 @@ class Parsing():
             return (False, (0, 0))
         return (True, (int(list_int[0]), int(list_int[1])))
 
+    # verify if the metada is normed or not in the extern not in detail
     def _get_metadata_in_line(self, line: str) -> tuple[bool, str]:
         metadata_str: str = ""
         line = line.strip()
@@ -165,16 +183,26 @@ class Parsing():
             metadata_str.strip()
         return (True, metadata_str)
 
+    # verify the keys in the metadata
     def _parse_metadata(self, metadata: str) -> bool:
         data = metadata.split(" ")
-        regex = r"^\w+$"
-        if regex:
-            return True
+        pattern = re.compile(r"^\w+$")
         for tmp in data:
             k_v = tmp.split("=")
             if len(k_v) != 2:
                 return False
-            k_v[0]
+            if not (pattern.match(k_v[0]) and pattern(k_v[1])):
+                pass
+        return True
+
+    # verify if there is some metadata
+    def _there_is_metadata(self, line: str) -> int:
+        line_s = line.split(":")
+        name = line_s[0]
+        index_md = 2 if name == "connection" else 3
+        data = line_s[1].strip().split(" ")
+        if len(data) < index_md + 1:
+            return False
         return True
 
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
