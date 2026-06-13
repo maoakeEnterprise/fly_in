@@ -222,8 +222,8 @@ class Parsing():
             names.add(self._get_name_in_line(line, 0)[2])
         return names
 
-    def connection_names_exist(self, names: set[str], connection: set[str]
-                               ) -> bool:
+    def _connection_names_exist(self, names: set[str], connection: set[str]
+                                ) -> bool:
         verif_set = names.intersection(connection)
         if len(verif_set) != 2:
             return False
