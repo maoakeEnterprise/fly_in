@@ -176,3 +176,11 @@ class TestParsing:
         parsing = Parsing("Poop")
         res = parsing._there_is_metadata(line)
         assert res is False
+
+    def test_parsemetada(self) -> None:
+        metadata = "zone=restricted caca=orange"
+        parsing = Parsing("poop")
+        res = parsing._parse_metadata(
+            metadata, ["zone", "color", "max_drones"]
+        )
+        assert res is False

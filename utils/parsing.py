@@ -184,15 +184,16 @@ class Parsing():
         return (True, metadata_str)
 
     # verify the keys in the metadata
-    def _parse_metadata(self, metadata: str) -> bool:
-        data = metadata.split(" ")
-        pattern = re.compile(r"^\w+$")
+    def _parse_metadata(self, metadata: str, keys: list[str]) -> bool:
+        data = metadata.strip().split(" ")
         for tmp in data:
             k_v = tmp.split("=")
             if len(k_v) != 2:
                 return False
-            if not (pattern.match(k_v[0]) and pattern(k_v[1])):
-                pass
+            if k_v[0] in keys:
+                keys.remove(k_v[0])
+            else:
+                return False
         return True
 
     # verify if there is some metadata
