@@ -216,6 +216,27 @@ class Parsing():
         conn_set.add(connection[1])
         return (True, conn_set)
 
+    def _get_names_hub(self) -> set[str]:
+        names = set()
+        for line in self.data:
+            names.add(self._get_name_in_line(line, 0)[2])
+        return names
+
+    def connection_names_exist(self, names: set[str], connection: set[str]
+                               ) -> bool:
+        verif_set = names.intersection(connection)
+        if len(verif_set) != 2:
+            return False
+        return True
+
+    def _uniq_connection(self, connections: list[set[str]],
+                         connection: set[str]) -> bool:
+        for conn in connections:
+            res = conn.intersection(connection)
+            if len(res) == 2:
+                return False
+        return True
+
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
         coords: set[tuple[int, int]] = set()
         index = 0
