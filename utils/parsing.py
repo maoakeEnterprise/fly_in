@@ -206,6 +206,16 @@ class Parsing():
             return False
         return True
 
+    def _parse_data_connection(self, line: str) -> tuple[bool, set[str]]:
+        conn_set = set()
+        data = line.strip().split(":")[1].strip().split(" ")
+        connection = data[0].split("-")
+        if len(connection) != 2:
+            return (False, conn_set)
+        conn_set.add(connection[0])
+        conn_set.add(connection[1])
+        return (True, conn_set)
+
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int]:
         coords: set[tuple[int, int]] = set()
         index = 0

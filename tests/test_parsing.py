@@ -184,3 +184,9 @@ class TestParsing:
             metadata, ["zone", "color", "max_drones"]
         )
         assert res is False
+
+    def test_parse_data_connection(self) -> None:
+        line = "connection: maze_a1-maze_a2"
+        parsing = Parsing("poop")
+        res = parsing._parse_data_connection(line)
+        assert res[0] is True
