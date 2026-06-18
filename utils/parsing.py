@@ -366,6 +366,7 @@ class Parsing():
             NameMetaDataC.MAX_LINK.value
         }
         index = 0
+        true_index = 1
         error_log.append(self._unique_hub(self.data, HubName.START_HUB.value))
         error_log.append(self._unique_hub(self.data, HubName.END_HUB.value))
         error_log.append(self._is_len_split_two_point(self.data))
@@ -380,12 +381,14 @@ class Parsing():
 
         for line in self.data:
             if self._skip_line(line):
+                true_index += 1
                 continue
             if self._ignore_hashtag(line):
+                true_index += 1
                 continue
             if index == 0:
                 if not self._first_line(line, index):
-                    error_log.append((False, index))
+                    error_log.append((False, true_index))
                     continue
             else:
                 key = self._get_first_key(line)
@@ -393,37 +396,38 @@ class Parsing():
                     if self._there_is_metadata(line):
                         res_m = self._get_metadata_in_line(line)
                         if res_m[0] is False:
-                            error_log.append((False, index))
+                            error_log.append((False, true_index))
                             continue
                         res_mp = self._parse_metadata(res_m[1],
                                                       metadata_key_hub)
                         if res_mp is False:
-                            error_log.append((False, index))
+                            error_log.append((False, true_index))
                             continue
                 elif key == "connection":
                     connections: list[set[str]] = []
                     res_cn = self._parse_data_connection(line)
                     if res_cn[0] is False:
-                        error_log.append((False, index))
+                        error_log.append((False, true_index))
                         continue
                     res_ce = self._connection_names_exist(names_hub, res_cn[1])
                     if res_ce is False:
-                        error_log.append((False, index))
+                        error_log.append((False, true_index))
                         continue
                     res_uc = self._uniq_connection(connections, res_cn[1])
                     if res_uc is False:
-                        error_log.append((False, index))
+                        error_log.append((False, true_index))
                         continue
                     connections.append(res_cn[1])
                     if self._there_is_metadata(line):
                         res_m = self._get_metadata_in_line(line)
                         if res_m[0] is False:
-                            error_log.append((False, index))
+                            error_log.append((False, true_index))
                             continue
                         res_mp = self._parse_metadata(res_m[1],
                                                       metadata_key_conn)
                         if res_mp is False:
-                            error_log.append((False, index))
+                            error_log.append((False, true_index))
                             continue
             index += 1
+            true_index += 1
         return error_log
