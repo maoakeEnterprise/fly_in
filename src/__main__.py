@@ -7,11 +7,13 @@ def main() -> None:
         flag_manager.init_args(None)
         path_file = flag_manager.get_path_from_flag()
         parsing = Parsing(path_file)
-        is_graph = flag_manager.is_graphed()
+        # is_graph = flag_manager.is_graphed()
+        error_log = parsing.parse_data()
 
-        print(is_graph)
+        # print(is_graph)
+        print(error_log)
         print("===============================")
-        parsing._print_data()
+        # parsing._print_data()
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")
