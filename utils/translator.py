@@ -24,6 +24,35 @@ class Translator(Parsing):
     def _get_metadata_in_line(self, line: str) -> str:
         return super()._get_metadata_in_line(line)[1]
 
+    def _fit_metadata(self, line: str) -> None:
+        line_s = line.strip().split(":")
+        metadata_str = self._get_metadata_in_line(line)
+        if line_s[0] == "connection":
+            metadata = {
+                "max_link_capacity": ""
+            }
+            metadata_split = metadata_str.split(" ")
+            for data in metadata_split:
+                sub_data = data.split("=")
+                if sub_data[0].strip() == "max_link_capcacity":
+                    metadata["max_link_capacity"] = sub_data[1]
+        else:
+            metadata = {
+                "color": "",
+                "zone": "",
+                "max_drones": ""
+            }
+            metadata_split = metadata_str.split(" ")
+            for data in metadata_split:
+                sub_data = data.split("=")
+                if sub_data[0].strip() == "color":
+                    metadata["color"] = sub_data[1]
+                elif sub_data[0].strip() == "zone":
+                    metadata["zone"] = sub_data[1]
+                elif sub_data[0].strip() == "max_drones":
+                    metadata["max_drones"] = sub_data[1]
+        return metadata
+
     def _get_name_in_line(self, line) -> str:
         return super()._get_name_in_line(line, 0)[2]
 
@@ -35,3 +64,6 @@ class Translator(Parsing):
 
     def _get_first_key(self, line) -> str:
         return super()._get_first_key(line)
+
+    def translate(self) -> None:
+        pass
