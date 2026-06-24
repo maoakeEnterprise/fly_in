@@ -1,8 +1,8 @@
 from pydantic import BaseModel, Field
-from utils.hub import Hub
 
 
 class Connection(BaseModel):
-    hub1: Hub
-    hub2: Hub
+    name_hub1: str
+    name_hub2: str
     max_link: int = Field(gt=0)
+    nb_drones_in: int = 0

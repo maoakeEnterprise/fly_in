@@ -1,8 +1,13 @@
 from utils.parsing import Parsing
+from utils.hub import Hub
+from utils.connection import Connection
 
 
 class Translator(Parsing):
     def __init__(self, path: str) -> None:
+        self.hubs: list[Hub] = []
+        self.connections: list[Connection] = []
+        self.nb_drones: int = 0
         super().__init__(path)
 
     def _load_data_from_file(self) -> None:
@@ -24,12 +29,12 @@ class Translator(Parsing):
     def _get_metadata_in_line(self, line: str) -> str:
         return super()._get_metadata_in_line(line)[1]
 
-    def _fit_metadata(self, line: str) -> None:
+    def _fit_metadata(self, line: str) -> dict[str, str]:
         line_s = line.strip().split(":")
         metadata_str = self._get_metadata_in_line(line)
         if line_s[0] == "connection":
             metadata = {
-                "max_link_capacity": ""
+                "max_link_capacity": f"{self.nb_drones}"
             }
             metadata_split = metadata_str.split(" ")
             for data in metadata_split:
@@ -38,9 +43,9 @@ class Translator(Parsing):
                     metadata["max_link_capacity"] = sub_data[1]
         else:
             metadata = {
-                "color": "",
-                "zone": "",
-                "max_drones": ""
+                "color": "grey",
+                "zone": "normal",
+                "max_drones": f"{self.nb_drones}"
             }
             metadata_split = metadata_str.split(" ")
             for data in metadata_split:
@@ -66,4 +71,33 @@ class Translator(Parsing):
         return super()._get_first_key(line)
 
     def translate(self) -> None:
-        pass
+        self._load_data_from_file()
+        self.nb_drones = self._get_nb_drones()
+        for line in self.data:
+            if self._skip_line(line):
+                continue
+            if self._ignore_hashtag(line):
+                continue
+            key = self._get_first_key(line)
+            if key == "connection":
+                conn_names = list(self._get_connection_in_line(line))
+                conn_meta = self._fit_metadata(line)
+                connection = Connection(
+                    name_hub1=conn_names[0],
+                    name_hub2=conn_names[1],
+                    max_link=int(conn_meta["max_link_capacity"]),
+                    nb_drones_in=0
+                )
+                self.connections.append(connection)
+            else:
+                hub_meta = self._fit_metadata(line)
+                hub = Hub(
+                    type_hub=self._get_first_key(line),
+                    name=self._get_name_in_line(line),
+                    coord=self._get_coord_in_line(line),
+                    color=hub_meta["color"],
+                    max_drones=int(hub_meta["max_drones"]),
+                    zone=hub_meta["zone"],
+                    nb_drones_in=0,
+                )
+                self.hubs.append(hub)
