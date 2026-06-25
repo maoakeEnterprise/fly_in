@@ -1,4 +1,14 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from enum import Enum
+
+
+class NameColor(Enum):
+    RED = "red"
+    YELLOW = "yellow"
+    PURPLE = "purple"
+    PINK = "pink"
+    ORANGE = "orange"
+    BLUE = "blue"
 
 
 class Hub(BaseModel):
@@ -9,3 +19,9 @@ class Hub(BaseModel):
     max_drones: int = Field(gt=0)
     zone: str
     nb_drones_in: int
+
+    @model_validator(mode="after")
+    def check_hub(self) -> 'Hub':
+        if self.color not in NameColor:
+            self.color = NameColor.YELLOW.value
+        return self
