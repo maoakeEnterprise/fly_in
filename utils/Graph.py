@@ -20,7 +20,7 @@ class NameColor(Enum):
 
 class Node:
     def __init__(self, name: str, coord: tuple[int, int], color: str,
-                 max_drones: int, zone_type: str) -> None:
+                 max_drones: int, zone_type: str, type_hub: str) -> None:
         self.name = name
         self.coord = coord
         self.color = NameColor(color)
@@ -28,9 +28,9 @@ class Node:
         self.zone_type = ZoneType(zone_type)
         self.start = False
         self.end = False
-        if name == "start_hub":
+        if type_hub == "start_hub":
             self.start = True
-        if name == "end_hub":
+        if type_hub == "end_hub":
             self.end = True
 
     def entry_cost(self) -> int:
@@ -43,7 +43,7 @@ class Node:
         print(f"Coord: {self.coord}")
         print(f"Color: {self.color.value}")
         print(f"Max_drones: {self.max_drones}")
-        print(f"Zone Type: {self.zone_type}")
+        print(f"Zone Type: {self.zone_type.value}")
         print(f"is start: {self.start}")
         print(f"is end: {self.end}")
 
@@ -82,7 +82,8 @@ class Graph:
                 hub.coord,
                 hub.color,
                 hub.max_drones,
-                hub.zone
+                hub.zone,
+                hub.type_hub
             )
             if hub.zone == ZoneType.BLOCKED.value:
                 continue
@@ -90,11 +91,13 @@ class Graph:
 
     def debug_nodes(self) -> None:
         for key, node in self.nodes.items():
+            print("=======================")
             print(key.upper())
             node.print_node()
 
     def debug_edges(self) -> None:
         for key, edges in self.edges.items():
+            print("=======================")
             print(f"Origin: {key}")
             for edge in edges:
                 edge.print_edge()

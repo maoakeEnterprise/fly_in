@@ -16,6 +16,7 @@ def main() -> None:
         graph.load_nodes(translator.hubs)
         graph.load_edges(translator.connections)
         graph.debug_nodes()
+        print("\nCONNECTIONS\n")
         graph.debug_edges()
         # print(is_graph)
         print(error_log)

@@ -70,6 +70,12 @@ class Translator(Parsing):
     def _get_first_key(self, line) -> str:
         return super()._get_first_key(line)
 
+    def is_line_nb_drones(self, line: str) -> bool:
+        line_s = line.split(":")
+        if line_s[0].strip() == "nb_drones":
+            return True
+        return False
+
     def translate(self) -> None:
         self._load_data_from_file()
         self.nb_drones = self._get_nb_drones()
@@ -79,6 +85,8 @@ class Translator(Parsing):
             if self._ignore_hashtag(line):
                 continue
             key = self._get_first_key(line)
+            if self.is_line_nb_drones(line):
+                continue
             if key == "connection":
                 conn_names = list(self._get_connection_in_line(line))
                 conn_meta = self._fit_metadata(line)
