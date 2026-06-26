@@ -34,18 +34,18 @@ class Translator(Parsing):
         metadata_str = self._get_metadata_in_line(line)
         if line_s[0] == "connection":
             metadata = {
-                "max_link_capacity": f"{self.nb_drones}"
+                "max_link_capacity": "1"
             }
             metadata_split = metadata_str.split(" ")
             for data in metadata_split:
                 sub_data = data.split("=")
-                if sub_data[0].strip() == "max_link_capcacity":
+                if sub_data[0].strip() == "max_link_capacity":
                     metadata["max_link_capacity"] = sub_data[1]
         else:
             metadata = {
                 "color": "grey",
                 "zone": "normal",
-                "max_drones": f"{self.nb_drones}"
+                "max_drones": "1"
             }
             metadata_split = metadata_str.split(" ")
             for data in metadata_split:

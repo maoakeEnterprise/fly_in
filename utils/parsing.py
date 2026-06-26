@@ -351,6 +351,7 @@ class Parsing():
 
     def parse_data(self) -> list[tuple[bool, int]]:
         self._load_data_from_file()
+        connections: list[set[str]] = []
         error_log: list[tuple[bool, int]] = []
         key_name = {
             HubName.START_HUB.value,
@@ -404,7 +405,6 @@ class Parsing():
                             error_log.append((False, true_index))
                             continue
                 elif key == "connection":
-                    connections: list[set[str]] = []
                     res_cn = self._parse_data_connection(line)
                     if res_cn[0] is False:
                         error_log.append((False, true_index))
