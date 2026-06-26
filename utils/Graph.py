@@ -38,11 +38,24 @@ class Node:
             return (2)
         return (1)
 
+    def print_node(self) -> None:
+        print(f"Name: {self.name}")
+        print(f"Coord: {self.coord}")
+        print(f"Color: {self.color.value}")
+        print(f"Max_drones: {self.max_drones}")
+        print(f"Zone Type: {self.zone_type}")
+        print(f"is start: {self.start}")
+        print(f"is end: {self.end}")
+
 
 class Edge:
     def __init__(self, dst: str, max_link: str) -> None:
         self.dst = dst
         self.max_link = max_link
+
+    def print_edge(self) -> None:
+        print(f"dest: {self.dst}")
+        print(f"max_link: {self.max_link}")
 
 
 class Graph:
@@ -50,7 +63,7 @@ class Graph:
         self.nodes: dict[str, Node] = {}
         self.edges: dict[str, list[Edge]] = {}
 
-    def _load_edges(self, connections: list[Connection]) -> None:
+    def load_edges(self, connections: list[Connection]) -> None:
         for connection in connections:
             a, b = connection.name_hub1, connection.name_hub2
             if a not in self.nodes or b not in self.nodes:
@@ -62,7 +75,7 @@ class Graph:
             self.edges[a].append(Edge(b, connection.max_link))
             self.edges[b].append(Edge(a, connection.max_link))
 
-    def _load_nodes(self, hubs: list[Hub]) -> None:
+    def load_nodes(self, hubs: list[Hub]) -> None:
         for hub in hubs:
             node = Node(
                 hub.name,
@@ -74,6 +87,17 @@ class Graph:
             if hub.zone == ZoneType.BLOCKED.value:
                 continue
             self.nodes[hub.name] = node
+
+    def debug_nodes(self) -> None:
+        for key, node in self.nodes.items():
+            print(key.upper())
+            node.print_node()
+
+    def debug_edges(self) -> None:
+        for key, edges in self.edges.items():
+            print(f"Origin: {key}")
+            for edge in edges:
+                edge.print_edge()
 
     def get_neighbors(self, name: str) -> Node:
         return self.nodes[name]
