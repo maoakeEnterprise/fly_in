@@ -1,5 +1,6 @@
 from enum import Enum
 from utils import Connection, Hub
+import heapq
 
 
 class ZoneType(Enum):
@@ -34,8 +35,17 @@ class Node:
             self.end = True
 
     def entry_cost(self) -> int:
+        if self.start is True:
+            return (0)
         if (self.zone_type == ZoneType.RESTRICTED):
             return (2)
+        return (1)
+
+    def get_priority(self) -> int:
+        if self.start or self.end or self.zone_type == ZoneType.BLOCKED:
+            return (0)
+        if self.zone_type == ZoneType.BLOCKED:
+            return (-1)
         return (1)
 
     def print_node(self) -> None:
@@ -102,8 +112,28 @@ class Graph:
             for edge in edges:
                 edge.print_edge()
 
-    def get_neighbors(self, name: str) -> Node:
+    def get_node(self, name: str) -> Node:
         return self.nodes[name]
 
-    def get_edge(self, name: str) -> list[Edge]:
+    def get_start(self) -> Node:
+        for node in self.nodes.values():
+            if node.start is True:
+                return node
+        return node
+
+    def get_end(self) -> Node:
+        for node in self.nodes.values():
+            if node.end is True:
+                return node
+        return node
+
+    def get_neighbors(self, name: str) -> list[Edge]:
         return self.edges[name]
+
+    def short_path(self) -> None:
+        start, end = Graph.get_start(), Graph.get_end()
+        dist: dict[str, int] = {}
+        prio_cnt: dict[str, int] = {}
+        previous: dict[str, Node] = {}
+        settled: set[str] = set()
+        heap = [(start.entry_cost, 0, )]
