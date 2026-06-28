@@ -1,6 +1,7 @@
 from enum import Enum
 from utils import Connection, Hub
 import heapq
+import itertools
 
 
 class ZoneType(Enum):
@@ -39,13 +40,6 @@ class Node:
             return (0)
         if (self.zone_type == ZoneType.RESTRICTED):
             return (2)
-        return (1)
-
-    def get_priority(self) -> int:
-        if self.start or self.end or self.zone_type == ZoneType.BLOCKED:
-            return (0)
-        if self.zone_type == ZoneType.BLOCKED:
-            return (-1)
         return (1)
 
     def print_node(self) -> None:
@@ -130,10 +124,51 @@ class Graph:
     def get_neighbors(self, name: str) -> list[Edge]:
         return self.edges[name]
 
-    def short_path(self) -> None:
-        start, end = Graph.get_start(), Graph.get_end()
-        dist: dict[str, int] = {}
-        prio_cnt: dict[str, int] = {}
-        previous: dict[str, Node] = {}
+    def short_path(self) -> dict[str, str]:
+        start, end = self.get_start(), self.get_end()
+        dist: dict[str, float] = {name: float("inf")
+                                  for name in self.nodes.keys()}
+        prio_cnt: dict[str, int] = {name: 0 for name in self.nodes.keys()}
+        previous: dict[str, str] = {}
         settled: set[str] = set()
-        heap = [(start.entry_cost, 0, )]
+        tie = itertools.count()
+        dist[start.name] = 0
+        heap = [(start.entry_cost(), 0, tie, start.name)]
+
+        while heap:
+            cost_actual, _, _, name_actual = heapq.heappop(heap)
+            if name_actual in settled:
+                continue
+            settled.add(name_actual)
+            if name_actual == end.name:
+                break
+            for edge in self.edges[name_actual]:
+                next_hub = edge.dst
+                if next_hub in settled:
+                    continue
+                n_entry_cost = self.nodes[next_hub].entry_cost()
+                n_cost = n_entry_cost + cost_actual
+                n_prio = prio_cnt[name_actual] + (1 if self.nodes[name_actual].
+                                                  zone_type == ZoneType.
+                                                  PRIORITY else 0)
+                if (n_cost, -n_prio) < (dist[next_hub], -prio_cnt[next_hub]):
+                    dist[next_hub] = n_cost
+                    previous.setdefault(next_hub, name_actual)
+                    prio_cnt[next_hub] = n_prio
+                    heapq.heappush(heap, (dist[next_hub], n_prio, next(tie),
+                                          next_hub))
+        if dist[end.name] == float("inf"):
+            raise ValueError("No Path possible")
+        return previous
+
+    def get_path(self, prev: dict[str, str]):
+        end = self.get_end()
+        start = self.get_start()
+        path: list[str] = []
+        current = end.name
+        while current != start.name:
+            path.append(current)
+            current = prev[current]
+        path.append(start.name)
+        path.reverse()
+        return path
