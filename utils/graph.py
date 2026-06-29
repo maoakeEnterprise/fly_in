@@ -53,13 +53,20 @@ class Node:
 
 
 class Edge:
-    def __init__(self, dst: str, max_link: str) -> None:
+    def __init__(self, dst: str, max_link: int) -> None:
         self.dst = dst
         self.max_link = max_link
 
     def print_edge(self) -> None:
         print(f"dest: {self.dst}")
         print(f"max_link: {self.max_link}")
+
+
+class Path_Finder:
+    def __init__(self, pathing: list[str], turns: int, prio: int):
+        self.pathing: list[str] = pathing
+        self.turns: int = turns
+        self.priority_count: int = prio
 
 
 class Graph:
@@ -124,7 +131,7 @@ class Graph:
     def get_neighbors(self, name: str) -> list[Edge]:
         return self.edges[name]
 
-    def short_path(self) -> dict[str, str]:
+    def short_path(self) -> Path_Finder:
         start, end = self.get_start(), self.get_end()
         dist: dict[str, float] = {name: float("inf")
                                   for name in self.nodes.keys()}
@@ -159,9 +166,13 @@ class Graph:
                                           next_hub))
         if dist[end.name] == float("inf"):
             raise ValueError("No Path possible")
-        return previous
+        return Path_Finder(
+            pathing=self._get_path(previous),
+            turns=int(dist[end.name]),
+            prio=prio_cnt[end.name]
+        )
 
-    def get_path(self, prev: dict[str, str]):
+    def _get_path(self, prev: dict[str, str]) -> list[str]:
         end = self.get_end()
         start = self.get_start()
         path: list[str] = []
@@ -172,3 +183,6 @@ class Graph:
         path.append(start.name)
         path.reverse()
         return path
+
+    def get_residual(self) -> None:
+        pass
