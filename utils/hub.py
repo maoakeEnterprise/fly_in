@@ -24,4 +24,7 @@ class Hub(BaseModel):
     def check_hub(self) -> 'Hub':
         if self.color not in NameColor:
             self.color = NameColor.YELLOW.value
+        if self.type_hub in ["start_hub", "end_hub"]:
+            if self.zone != "normal":
+                raise ValueError(f"{self.type_hub} should be a normal zone")
         return self
