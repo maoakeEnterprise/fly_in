@@ -356,7 +356,7 @@ class Parsing():
         key_name = {
             HubName.START_HUB.value,
             HubName.END_HUB.value,
-            HubName.HUB,
+            HubName.HUB.value,
         }
         metadata_key_hub = {
             NameMetaData.ZONE.value,
