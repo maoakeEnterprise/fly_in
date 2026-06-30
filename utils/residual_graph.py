@@ -18,11 +18,11 @@ class ResidualGraph:
             if node.end:
                 self.end_path = node.name
             tmp_cap = inf if node.start or node.end else float(node.max_drones)
-            self._add_arc(node+"_in", node+"_out", tmp_cap)
+            self._add_arc(f"{node}_in", f"{node}_out", tmp_cap)
 
         for node in graph.nodes.keys():
             for edge in graph.edges[node]:
-                self._add_arc(node+"_in", edge.dst+"_out",
+                self._add_arc(f"{node}_in", f"{edge.dst}_out",
                               float(edge.max_link))
         self.cap_init = copy(self.residual)
 
@@ -41,17 +41,30 @@ class ResidualGraph:
             n = queue.pop(0)
             if n == end_path:
                 return previous
-            for next_n in self.residual[n].keys():
-                if next_n not in checked and self.residual[n][next_n] > 0:
+            for next_n, cap in self.residual[n].items():
+                if next_n not in checked and cap > 0:
                     previous.setdefault(next_n, n)
+                    checked.add(next_n)
                     queue.append(next_n)
         return None
 
     def maxflow(self, start_path: str, end_path: str) -> None:
-        total_flow = 0
+        total_flow = 0.0
         while True:
             prev = self.bfs(start_path, end_path)
             total_flow += 1
             if prev is None:
                 break
-        pass
+            tmp_f = float("inf")
+            tmp_n = end_path
+            while tmp_n != start_path:
+                tmp_p = prev[tmp_n]
+                tmp_f = min(tmp_f, self.residual[tmp_n][tmp_f])
+                tmp_n = tmp_p
+            tmp_n = end_path
+            while tmp_n != start_path:
+                tmp_p = prev[tmp_n]
+                self.residual[tmp_p][tmp_n] -= tmp_f
+                self.residual[tmp_n][tmp_p] == tmp_f
+            total_flow += tmp_f
+        return total_flow
