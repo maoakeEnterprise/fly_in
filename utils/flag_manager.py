@@ -81,6 +81,13 @@ class FlagManager:
             const="maps/hard/03*",
         )
         parser.add_argument(
+            "--launch_C1",
+            nargs="?",
+            type=str,
+            default="None",
+            const="maps/challenger/01*",
+        )
+        parser.add_argument(
             "--graph",
             nargs="?",
             default="not_graph",
@@ -110,6 +117,7 @@ class FlagManager:
         values.append(args.launch_H1)
         values.append(args.launch_H2)
         values.append(args.launch_H3)
+        values.append(args.launch_C1)
         values.append(args.graph)
 
         return values
@@ -117,7 +125,7 @@ class FlagManager:
     def _flag_check(self, values: list[str]) -> bool:
         none_count = values.count("None")
 
-        if none_count != 9:
+        if none_count != 10:
             raise ValueError("There is too much or no"
                              " flag up flag up should be one")
         return True

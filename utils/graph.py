@@ -185,5 +185,21 @@ class Graph:
         path.reverse()
         return path
 
-    def get_residual(self) -> None:
-        pass
+    def path_cost(self, path: list[str]) -> int:
+        cost = 0
+        for node in path:
+            if self.nodes[node].start:
+                continue
+            cost += self.nodes[node].entry_cost()
+        return cost
+
+    def _get_nb_drone_min(self, path: list[str]) -> int:
+        nb_max = float("inf")
+        for node in path:
+            nb_max = min(self.nodes[node].max_drones, nb_max)
+        for i in range(len(path)):
+            if i < len(path) - 1:
+                for edge in self.edges[path[i]]:
+                    if edge.dst == path[i + 1]:
+                        nb_max = min(nb_max, edge.max_link)
+        return nb_max

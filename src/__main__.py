@@ -21,6 +21,8 @@ def main() -> None:
         residuals.maxflow(residuals.start_path, residuals.end_path)
         res = residuals.decompose(residuals.start_path, residuals.end_path)
         print(res)
+        for path in res:
+            print(graph._get_nb_drone_min(path))
         print(error_log)
         print("===============================")
         print("Hello from fly-in!")
