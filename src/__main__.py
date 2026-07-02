@@ -22,7 +22,8 @@ def main() -> None:
         res = residuals.decompose(residuals.start_path, residuals.end_path)
         print(res)
         for path in res:
-            print(graph._get_nb_drone_min(path))
+            print(graph.path_cost(path))
+        print(graph.calcul_max_turns(res))
         print(error_log)
         print("===============================")
         print("Hello from fly-in!")

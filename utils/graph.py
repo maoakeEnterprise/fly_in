@@ -70,7 +70,7 @@ class Path_Finder:
 
 
 class Graph:
-    def __init__(self, total_drones):
+    def __init__(self, total_drones: int):
         self.nodes: dict[str, Node] = {}
         self.edges: dict[str, list[Edge]] = {}
         self.total_drones = total_drones
@@ -196,10 +196,25 @@ class Graph:
     def _get_nb_drone_min(self, path: list[str]) -> int:
         nb_max = float("inf")
         for node in path:
+            if self.nodes[node].start:
+                continue
             nb_max = min(self.nodes[node].max_drones, nb_max)
         for i in range(len(path)):
             if i < len(path) - 1:
                 for edge in self.edges[path[i]]:
                     if edge.dst == path[i + 1]:
                         nb_max = min(nb_max, edge.max_link)
-        return nb_max
+        return int(nb_max)
+
+    def calcul_max_turns(self, paths: list[str]) -> None:
+        count_d = [0] * len(paths)
+        turn_paths = [self.path_cost(path) for path in paths]
+        for d in range(self.total_drones):
+            i = min(range(len(paths)), key=lambda j: turn_paths[j] +
+                    count_d[j])
+            count_d[i] += 1
+        return {
+            "count_d": count_d,
+            "turns_paths": turn_paths,
+            "paths": paths
+        }
