@@ -206,15 +206,11 @@ class Graph:
                         nb_max = min(nb_max, edge.max_link)
         return int(nb_max)
 
-    def calcul_max_turns(self, paths: list[str]) -> None:
+    def calcul_max_turns(self, paths: list[str]) -> list[int]:
         count_d = [0] * len(paths)
         turn_paths = [self.path_cost(path) for path in paths]
-        for d in range(self.total_drones):
+        for _ in range(self.total_drones):
             i = min(range(len(paths)), key=lambda j: turn_paths[j] +
                     count_d[j])
             count_d[i] += 1
-        return {
-            "count_d": count_d,
-            "turns_paths": turn_paths,
-            "paths": paths
-        }
+        return count_d
