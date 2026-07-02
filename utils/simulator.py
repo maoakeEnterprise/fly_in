@@ -15,5 +15,17 @@ class Simulator:
                 id += 1
             j += 1
 
+    def is_every_drones_delivered(self) -> bool:
+        for drone in self.drones:
+            if drone.delivered is False:
+                return False
+        return True
+
     def run(self, graph: Graph) -> None:
-        pass
+        while self.is_every_drones_delivered() is False:
+            # moves: list[str] = []
+            # occupancy: dict[str, int] = {}
+            # link_usage: dict[str, int] = {}
+            for drone in self.drones:
+                if drone.delivered:
+                    continue

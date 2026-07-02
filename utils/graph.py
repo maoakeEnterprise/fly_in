@@ -69,13 +69,6 @@ class Path_Finder:
         self.priority_count: int = prio
 
 
-class Drone:
-    def __init__(self, id: int, path: list[str]):
-        self.id = id
-        self.path = path
-        self.pos = path[0]
-
-
 class Graph:
     def __init__(self, total_drones: int):
         self.nodes: dict[str, Node] = {}

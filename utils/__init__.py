@@ -5,7 +5,7 @@ from utils.hub import Hub
 from utils.connection import Connection
 from utils.graph import Graph
 from utils.residual_graph import ResidualGraph
-from utils.graph import Drone
+from utils.drone import Drone
 from utils.simulator import Simulator
 
 __version__ = "1.0.0"
