@@ -70,9 +70,10 @@ class Path_Finder:
 
 
 class Graph:
-    def __init__(self):
+    def __init__(self, total_drones):
         self.nodes: dict[str, Node] = {}
         self.edges: dict[str, list[Edge]] = {}
+        self.total_drones = total_drones
 
     def load_edges(self, connections: list[Connection]) -> None:
         for connection in connections:

@@ -1,17 +1,18 @@
 from utils import FlagManager, Parsing, Translator
-from utils import Graph
+from utils import Graph, ResidualGraph
 
 
 def main() -> None:
     try:
         flag_manager = FlagManager()
+        residuals = ResidualGraph()
         flag_manager.init_args(None)
         path_file = flag_manager.get_path_from_flag()
         parsing = Parsing(path_file)
         translator = Translator(path_file)
-        graph = Graph()
         error_log = parsing.parse_data()
         translator.translate()
+        graph = Graph(translator.nb_drones)
         graph.load_nodes(translator.hubs)
         graph.load_edges(translator.connections)
         path_finder = graph.short_path()
