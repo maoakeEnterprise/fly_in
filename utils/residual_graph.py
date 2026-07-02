@@ -87,4 +87,17 @@ class ResidualGraph:
                 path.append(next_n)
                 node = next_n
             paths.append(path)
-        return paths
+        new_paths: list[list[str]] = []
+        for path_t in paths:
+            new_paths.append(self.delete_in_out(path_t))
+        return new_paths
+
+    def delete_in_out(self, path: list[str]) -> list[str]:
+        normed_path: list[str] = []
+        for name in path:
+            if name.endswith("_in"):
+                normed_path.append(name.removesuffix("_in"))
+            if name.endswith("_out"):
+                normed_path.append(name.removesuffix("_out"))
+        normed_path = list(dict.fromkeys(normed_path))
+        return normed_path

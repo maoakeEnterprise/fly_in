@@ -17,9 +17,12 @@ def main() -> None:
         graph.load_edges(translator.connections)
         path_finder = graph.short_path()
         print(path_finder.pathing)
+        residuals.build_residual(graph)
+        residuals.maxflow(residuals.start_path, residuals.end_path)
+        res = residuals.decompose(residuals.start_path, residuals.end_path)
+        print(res)
         print(error_log)
         print("===============================")
-        # parsing._print_data()
         print("Hello from fly-in!")
     except ValueError as e:
         print("=======VALUE==ERROR========")
