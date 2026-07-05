@@ -4,7 +4,7 @@ from utils import ZoneType
 
 
 class Simulator:
-    def __init__(self):
+    def __init__(self) -> None:
         self.drones: list[Drone] = []
 
     def load_drones(self, paths: list[list[str]], count_d: list[int]) -> None:

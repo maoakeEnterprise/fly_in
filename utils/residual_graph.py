@@ -20,9 +20,9 @@ class ResidualGraph:
                        else float(node.max_drones))
             self._add_arc(f"{node.name}_in", f"{node.name}_out", tmp_cap)
 
-        for node in graph.nodes.keys():
-            for edge in graph.edges[node]:
-                self._add_arc(f"{node}_out", f"{edge.dst}_in",
+        for name in graph.nodes.keys():
+            for edge in graph.edges[name]:
+                self._add_arc(f"{name}_out", f"{edge.dst}_in",
                               float(edge.max_link))
         self.cap_init = deepcopy(self.residual)
 

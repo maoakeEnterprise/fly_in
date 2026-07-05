@@ -141,7 +141,9 @@ class Graph:
         settled: set[str] = set()
         tie = itertools.count()
         dist[start.name] = 0
-        heap = [(start.entry_cost(), 0, tie, start.name)]
+        heap: list[tuple[float, int, int, str]] = [
+            (start.entry_cost(), 0, next(tie), start.name)
+        ]
 
         while heap:
             cost_actual, _, _, name_actual = heapq.heappop(heap)
@@ -206,7 +208,7 @@ class Graph:
                         nb_max = min(nb_max, edge.max_link)
         return int(nb_max)
 
-    def calcul_max_turns(self, paths: list[str]) -> list[int]:
+    def calcul_max_turns(self, paths: list[list[str]]) -> list[int]:
         count_d = [0] * len(paths)
         turn_paths = [self.path_cost(path) for path in paths]
         for _ in range(self.total_drones):

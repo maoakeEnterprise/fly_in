@@ -229,7 +229,7 @@ class Parsing():
     """
         verify the keys in the metadata
     """
-    def _parse_metadata(self, metadata: str, keys: list[str]) -> bool:
+    def _parse_metadata(self, metadata: str, keys: set[str]) -> bool:
         data = metadata.strip().split(" ")
         keys_c = keys.copy()
         for tmp in data:
@@ -259,7 +259,7 @@ class Parsing():
         get the data connection
     """
     def _parse_data_connection(self, line: str) -> tuple[bool, set[str]]:
-        conn_set = set()
+        conn_set: set[str] = set()
         data = line.strip().split(":")[1].strip().split(" ")
         connection = data[0].split("-")
         if len(connection) != 2:

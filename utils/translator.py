@@ -26,12 +26,12 @@ class Translator(Parsing):
                 res = int(data[1])
         return res
 
-    def _get_metadata_in_line(self, line: str) -> str:
+    def _get_metadata_str(self, line: str) -> str:
         return super()._get_metadata_in_line(line)[1]
 
     def _fit_metadata(self, line: str) -> dict[str, str]:
         line_s = line.strip().split(":")
-        metadata_str = self._get_metadata_in_line(line)
+        metadata_str = self._get_metadata_str(line)
         if line_s[0] == "connection":
             metadata = {
                 "max_link_capacity": "1"
@@ -58,17 +58,14 @@ class Translator(Parsing):
                     metadata["max_drones"] = sub_data[1]
         return metadata
 
-    def _get_name_in_line(self, line) -> str:
+    def _get_hub_name(self, line: str) -> str:
         return super()._get_name_in_line(line, 0)[2]
 
-    def _get_coord_in_line(self, line) -> tuple[int, int]:
+    def _get_coord(self, line: str) -> tuple[int, int]:
         return super()._get_coord_in_line(line)[1]
 
-    def _get_connection_in_line(self, line) -> set[str]:
+    def _get_connection_in_line(self, line: str) -> set[str]:
         return super()._parse_data_connection(line)[1]
-
-    def _get_first_key(self, line) -> str:
-        return super()._get_first_key(line)
 
     def is_line_nb_drones(self, line: str) -> bool:
         line_s = line.split(":")
@@ -101,8 +98,8 @@ class Translator(Parsing):
                 hub_meta = self._fit_metadata(line)
                 hub = Hub(
                     type_hub=self._get_first_key(line),
-                    name=self._get_name_in_line(line),
-                    coord=self._get_coord_in_line(line),
+                    name=self._get_hub_name(line),
+                    coord=self._get_coord(line),
                     color=hub_meta["color"],
                     max_drones=int(hub_meta["max_drones"]),
                     zone=hub_meta["zone"],
