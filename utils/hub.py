@@ -1,17 +1,13 @@
 from pydantic import BaseModel, Field, model_validator
-from enum import Enum
-
-
-class NameColor(Enum):
-    RED = "red"
-    YELLOW = "yellow"
-    PURPLE = "purple"
-    PINK = "pink"
-    ORANGE = "orange"
-    BLUE = "blue"
 
 
 class Hub(BaseModel):
+    """A parsed zone carrying its raw metadata.
+
+    The ``color`` given in the map file is kept verbatim; validating
+    whether it is a renderable color is left to the visual layer.
+    """
+
     type_hub: str
     name: str
     coord: tuple[int, int]
@@ -22,8 +18,7 @@ class Hub(BaseModel):
 
     @model_validator(mode="after")
     def check_hub(self) -> 'Hub':
-        if self.color not in NameColor:
-            self.color = NameColor.YELLOW.value
+        """Ensure start and end zones keep a normal movement cost."""
         if self.type_hub in ["start_hub", "end_hub"]:
             if self.zone != "normal":
                 raise ValueError(f"{self.type_hub} should be a normal zone")

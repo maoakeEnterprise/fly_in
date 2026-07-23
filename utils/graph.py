@@ -11,21 +11,12 @@ class ZoneType(Enum):
     PRIORITY = "priority"
 
 
-class NameColor(Enum):
-    RED = "red"
-    YELLOW = "yellow"
-    PURPLE = "purple"
-    PINK = "pink"
-    ORANGE = "orange"
-    BLUE = "blue"
-
-
 class Node:
     def __init__(self, name: str, coord: tuple[int, int], color: str,
                  max_drones: int, zone_type: str, type_hub: str) -> None:
         self.name = name
         self.coord = coord
-        self.color = NameColor(color)
+        self.color: str = color
         self.max_drones = max_drones
         self.zone_type = ZoneType(zone_type)
         self.start = False
@@ -45,7 +36,7 @@ class Node:
     def print_node(self) -> None:
         print(f"Name: {self.name}")
         print(f"Coord: {self.coord}")
-        print(f"Color: {self.color.value}")
+        print(f"Color: {self.color}")
         print(f"Max_drones: {self.max_drones}")
         print(f"Zone Type: {self.zone_type.value}")
         print(f"is start: {self.start}")

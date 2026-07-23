@@ -3,9 +3,19 @@ from utils import Graph
 from utils import ZoneType
 
 
+Frame = list[tuple[int, tuple[float, float], bool]]
+
+
 class Simulator:
+    """Turn-by-turn drone routing simulation.
+
+    Besides printing the moves of every turn, the simulator records a
+    positional history (:attr:`history`) that the visualizer replays.
+    """
+
     def __init__(self) -> None:
         self.drones: list[Drone] = []
+        self.history: list[Frame] = []
 
     def load_drones(self, paths: list[list[str]], count_d: list[int]) -> None:
         id = 0
@@ -51,11 +61,42 @@ class Simulator:
         return True
 
     def _print_turn(self, moves: list[str]) -> None:
-        for move in moves:
-            print(move)
+        """Print all moves of a turn on a single space-separated line.
 
-    def run(self, graph: Graph) -> None:
+        Follows the output format of section VII.5 of the subject: one
+        line per turn, drones that do not move are omitted.
+        """
+        print(" ".join(moves))
+
+    def _drone_coord(self, graph: Graph,
+                     drone: Drone) -> tuple[float, float]:
+        """Return the coordinate of a drone for the current snapshot.
+
+        A delivered drone sits on the end zone, an in-flight drone is
+        placed on the middle of the connection it is crossing, and a
+        grounded drone is on its current zone.
+        """
+        if drone.delivered:
+            end = graph.get_end().coord
+            return (float(end[0]), float(end[1]))
+        if drone.in_flight:
+            src = graph.nodes[drone.path[drone.index]].coord
+            dst = graph.nodes[drone.path[drone.index + 1]].coord
+            return ((src[0] + dst[0]) / 2, (src[1] + dst[1]) / 2)
+        pos = graph.nodes[drone.path[drone.index]].coord
+        return (float(pos[0]), float(pos[1]))
+
+    def _snapshot(self, graph: Graph) -> Frame:
+        """Capture the position and delivered flag of every drone."""
+        frame: Frame = []
+        for drone in self.drones:
+            frame.append((drone.id, self._drone_coord(graph, drone),
+                          drone.delivered))
+        return frame
+
+    def run(self, graph: Graph) -> int:
         turns = 0
+        self.history.append(self._snapshot(graph))
         while self._is_every_drones_delivered() is False:
             moves: list[str] = []
             occupancy: dict[str, int] = {}
@@ -105,3 +146,5 @@ class Simulator:
                         occupancy[src] += 1
             self._print_turn(moves)
             turns += 1
+            self.history.append(self._snapshot(graph))
+        return turns

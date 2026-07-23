@@ -1,32 +1,40 @@
+import os
+
 from utils import FlagManager, Parsing, Translator
 from utils import Graph, ResidualGraph
+from utils import Simulator, Visualizer
 
 
 def main() -> None:
     try:
         flag_manager = FlagManager()
-        residuals = ResidualGraph()
         flag_manager.init_args(None)
         path_file = flag_manager.get_path_from_flag()
         parsing = Parsing(path_file)
         translator = Translator(path_file)
         error_log = parsing.parse_data()
+        if error_log:
+            for _, line in error_log:
+                print(f"Parsing error near line {line}")
+            return
         translator.translate()
         graph = Graph(translator.nb_drones)
         graph.load_nodes(translator.hubs)
         graph.load_edges(translator.connections)
-        path_finder = graph.short_path()
-        print(path_finder.pathing)
+
+        residuals = ResidualGraph()
         residuals.build_residual(graph)
         residuals.maxflow(residuals.start_path, residuals.end_path)
         res = residuals.decompose(residuals.start_path, residuals.end_path)
-        print(res)
-        for path in res:
-            print(graph.path_cost(path))
-        print(graph.calcul_max_turns(res))
-        print(error_log)
-        print("===============================")
-        print("Hello from fly-in!")
+
+        simulator = Simulator()
+        simulator.load_drones(res, graph.calcul_max_turns(res))
+        turns = simulator.run(graph)
+        print(f"=== Simulation finished in {turns} turns ===")
+
+        if flag_manager.is_graphed():
+            visualizer = Visualizer(graph, simulator.history)
+            visualizer.render(save_path=os.environ.get("FLY_IN_VISUAL_OUT"))
     except ValueError as e:
         print("=======VALUE==ERROR========")
         print(f"Message : {e}")
