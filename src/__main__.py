@@ -2,7 +2,7 @@ import os
 
 from utils import FlagManager, Parsing, Translator
 from utils import Graph, ResidualGraph
-from utils import Simulator, Visualizer
+from utils import Simulator
 
 
 def main() -> None:
@@ -31,10 +31,6 @@ def main() -> None:
         simulator.load_drones(res, graph.calcul_max_turns(res))
         turns = simulator.run(graph)
         print(f"=== Simulation finished in {turns} turns ===")
-
-        if flag_manager.is_graphed():
-            visualizer = Visualizer(graph, simulator.history)
-            visualizer.render(save_path=os.environ.get("FLY_IN_VISUAL_OUT"))
     except ValueError as e:
         print("=======VALUE==ERROR========")
         print(f"Message : {e}")
