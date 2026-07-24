@@ -123,7 +123,7 @@ class Graph:
     def get_neighbors(self, name: str) -> list[Edge]:
         return self.edges[name]
 
-    def short_path(self) -> Path_Finder:
+    def dijkstra_alg(self) -> Path_Finder:
         start, end = self.get_start(), self.get_end()
         dist: dict[str, float] = {name: float("inf")
                                   for name in self.nodes.keys()}
