@@ -51,3 +51,7 @@ class Visualizer:
             edgecolor, linewidth = self._border(node)
             ax.scatter(x, y, s=800, color=node.color, edgecolors=edgecolor, linewidths=linewidth, zorder=2)
             ax.annotate(name, (x, y), xytext=(0, 20), textcoords="offset points", ha="center", zorder=6)
+
+    def _update(self, ax: Axes, idx: int, dynamic: list[Artist]) -> None:
+        for art in dynamic:
+            art.remove()

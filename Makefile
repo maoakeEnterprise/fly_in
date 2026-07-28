@@ -20,7 +20,7 @@ install:
 	uv sync
 
 run:
-	uv run python -m src --graph --launch_E2
+	uv run python -m src --graph --launch_E1
 
 test_flag_manager:
 	PYTHONPATH=. uv run pytest $(FLAG_T)
