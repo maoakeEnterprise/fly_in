@@ -8,6 +8,7 @@ from utils.graph import ZoneType
 from utils.residual_graph import ResidualGraph
 from utils.drone import Drone
 from utils.simulator import Simulator
+from utils.visualizer import Visualizer
 
 __version__ = "1.0.0"
 __author__ = "mteriier"

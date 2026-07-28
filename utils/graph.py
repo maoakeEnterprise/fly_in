@@ -11,6 +11,26 @@ class ZoneType(Enum):
     PRIORITY = "priority"
 
 
+class ColorType(Enum):
+    BLUE = 'blue'
+    ORANGE = 'orange'
+    GREEN = 'green'
+    RED = 'red'
+    PURPLE = 'purple'
+    BROWN = 'brown'
+    PINK = 'pink'
+    GRAY = 'gray'
+    OLIVE = 'olive'
+    CYAN = 'cyan'
+    BLACK = 'black'
+    YELLOW = 'yellow'
+    LIME = 'lime'
+    GOLD = 'gold'
+    MAROON = 'maroon'
+    DARKRED = 'darkred'
+    CRIMSOM = 'crimson'
+
+
 class Node:
     def __init__(self, name: str, coord: tuple[int, int], color: str,
                  max_drones: int, zone_type: str, type_hub: str) -> None:
@@ -78,12 +98,19 @@ class Graph:
             self.edges[a].append(Edge(b, connection.max_link))
             self.edges[b].append(Edge(a, connection.max_link))
 
+    def set_color(self, color: str) -> str:
+        try:
+            ColorType(color)
+            return color
+        except ValueError:
+            return "gray"
+
     def load_nodes(self, hubs: list[Hub]) -> None:
         for hub in hubs:
             node = Node(
                 hub.name,
                 hub.coord,
-                hub.color,
+                self.set_color(hub.color),
                 hub.max_drones,
                 hub.zone,
                 hub.type_hub

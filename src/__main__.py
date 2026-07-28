@@ -2,7 +2,7 @@ import os
 
 from utils import FlagManager, Parsing, Translator
 from utils import Graph, ResidualGraph
-from utils import Simulator
+from utils import Simulator, Visualizer
 
 
 def main() -> None:
@@ -30,6 +30,8 @@ def main() -> None:
         simulator = Simulator()
         simulator.load_drones(res, graph.calcul_max_turns(res))
         turns = simulator.run(graph)
+        vizualiser = Visualizer(graph, simulator.history, 800)
+        vizualiser.render()
         print(f"=== Simulation finished in {turns} turns ===")
     except ValueError as e:
         print("=======VALUE==ERROR========")
