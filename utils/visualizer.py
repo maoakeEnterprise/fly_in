@@ -12,8 +12,10 @@ from utils.graph import Graph, Node
 
 Frame = list[tuple[int, tuple[float, float], bool]]
 
+
 class Visualizer:
-    def __init__(self, graph: Graph, history: list[Frame], interval: int = 800) -> None:
+    def __init__(self, graph: Graph, history: list[Frame],
+                 interval: int = 800) -> None:
         self.graph = graph
         self.history = history
         self.interval = interval
@@ -21,11 +23,11 @@ class Visualizer:
     def render(self) -> None:
         fig, ax = plt.subplots(figsize=(20, 20))
         ax.axis("off")
-        self.draw_network(ax)
-        self.draw_hub(ax)
+        self._draw_network(ax)
+        self._draw_hub(ax)
         plt.show()
 
-    def draw_network(self, ax: Axes) -> None:
+    def _draw_network(self, ax: Axes) -> None:
         drawn = set()
         for name, edges in self.graph.edges.items():
             if name not in self.graph.nodes:
@@ -45,13 +47,16 @@ class Visualizer:
             return ("red", 2.4)
         return ("black", 1.1)
 
-    def draw_hub(self, ax: Axes) -> None:
+    def _draw_hub(self, ax: Axes) -> None:
         for name, node in self.graph.nodes.items():
             x, y = node.coord
             edgecolor, linewidth = self._border(node)
-            ax.scatter(x, y, s=800, color=node.color, edgecolors=edgecolor, linewidths=linewidth, zorder=2)
-            ax.annotate(name, (x, y), xytext=(0, 20), textcoords="offset points", ha="center", zorder=6)
+            ax.scatter(x, y, s=800, color=node.color, edgecolors=edgecolor,
+                       linewidths=linewidth, zorder=2)
+            ax.annotate(name, (x, y), xytext=(0, 20),
+                        textcoords="offset points", ha="center", zorder=6)
 
     def _update(self, ax: Axes, idx: int, dynamic: list[Artist]) -> None:
         for art in dynamic:
             art.remove()
+        dynamic.clear()
