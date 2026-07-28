@@ -83,7 +83,9 @@ class Path_Finder:
 class Graph:
     def __init__(self, total_drones: int):
         self.nodes: dict[str, Node] = {}
+        self.complete_nodes: dict[str, Node] = {}
         self.edges: dict[str, list[Edge]] = {}
+        self.complete_edges: dict[str, list[Edge]] = {}
         self.total_drones = total_drones
 
     def load_edges(self, connections: list[Connection]) -> None:
@@ -97,6 +99,18 @@ class Graph:
                 self.edges.setdefault(b, [])
             self.edges[a].append(Edge(b, connection.max_link))
             self.edges[b].append(Edge(a, connection.max_link))
+
+    def load_commplete_edges(self, connections: list[Connection]) -> None:
+        for connection in connections:
+            a, b = connection.name_hub1, connection.name_hub2
+            if a not in self.complete_nodes or b not in self.complete_nodes:
+                continue
+            if a not in self.complete_edges:
+                self.complete_edges.setdefault(a, [])
+            if b not in self.complete_edges:
+                self.complete_edges.setdefault(b, [])
+            self.complete_edges[a].append(Edge(b, connection.max_link))
+            self.complete_edges[b].append(Edge(a, connection.max_link))
 
     def set_color(self, color: str) -> str:
         try:
@@ -115,6 +129,7 @@ class Graph:
                 hub.zone,
                 hub.type_hub
             )
+            self.complete_nodes[hub.name] = node
             if hub.zone == ZoneType.BLOCKED.value:
                 continue
             self.nodes[hub.name] = node

@@ -1,5 +1,3 @@
-import os
-
 from utils import FlagManager, Parsing, Translator
 from utils import Graph, ResidualGraph
 from utils import Simulator, Visualizer
@@ -21,6 +19,7 @@ def main() -> None:
         graph = Graph(translator.nb_drones)
         graph.load_nodes(translator.hubs)
         graph.load_edges(translator.connections)
+        graph.load_commplete_edges(translator.connections)
 
         residuals = ResidualGraph()
         residuals.build_residual(graph)
