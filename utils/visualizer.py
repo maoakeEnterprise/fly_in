@@ -1,8 +1,5 @@
-from __future__ import annotations
-
-import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
+from matplotlib.animation import FuncAnimation
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
 from matplotlib.lines import Line2D
@@ -80,6 +77,27 @@ class Visualizer:
                          f"Delivered: {delivered} / {total}")
         return dynamic
 
+    def _legend(self) -> list[Line2D]:
+        return [
+            Line2D([0], [0], marker="o", color="white", label="start",
+                   markerfacecolor="white", markeredgecolor="green",
+                   markeredgewidth=2.4, markersize=11),
+            Line2D([0], [0], marker="o", color="white", label="end",
+                   markerfacecolor="white", markeredgecolor="red",
+                   markeredgewidth=2.4, markersize=11),
+            Line2D([0], [0], marker="o", color="white", label="restricted",
+                   markerfacecolor="white", markeredgecolor="purple",
+                   markeredgewidth=2.4, markersize=11),
+            Line2D([0], [0], marker="o", color="white", label="blocked",
+                   markerfacecolor="white", markeredgecolor="gray",
+                   markeredgewidth=2.4, markersize=11),
+            Line2D([0], [0], marker="o", color="white",
+                   label="unknown color → default",
+                   markerfacecolor="gray",
+                   markeredgecolor="black", markersize=11),
+        ]
+        pass
+
     def render(self) -> None:
         if not self.history:
             return
@@ -88,6 +106,10 @@ class Visualizer:
         ax.axis("off")
         self._draw_network(ax)
         self._draw_hub(ax)
+        fig.legend(
+            handles=self._legend(), loc="lower center",
+            ncol=5, fontsize=9
+        )
         FuncAnimation(
             fig,
             lambda idx: self._update(ax, idx, dynamic),
@@ -96,4 +118,9 @@ class Visualizer:
             blit=False,
             repeat=False,
         )
+        delay = len(self.history) * self.interval + 3000
+        timer = fig.canvas.new_timer(interval=delay)
+        timer.single_shot = True
+        timer.add_callback(lambda: plt.close(fig))
+        timer.start()
         plt.show()
