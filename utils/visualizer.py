@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import matplotlib
-import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 from matplotlib.animation import FFMpegWriter, FuncAnimation, PillowWriter
 from matplotlib.artist import Artist
@@ -57,6 +56,25 @@ class Visualizer:
                         textcoords="offset points", ha="center", zorder=6)
 
     def _update(self, ax: Axes, idx: int, dynamic: list[Artist]) -> None:
+        counts: dict[tuple[float, float], int] = {}
         for art in dynamic:
             art.remove()
         dynamic.clear()
+        for _, coord, _ in self.history[idx]:
+            if coord in counts:
+                counts[coord] += 1
+            else:
+                counts.setdefault(coord, 1)
+        for (x, y), nb in counts.items():
+            drone_pos = ax.scatter(x, y, s=300, color="#111111",
+                                   edgecolors="white", linewidths=1.0,
+                                   zorder=4)
+            label = ax.annotate(str(nb), (x, y), color="white", fontsize=8,
+                                ha="center", va="center", fontweight="bold",
+                                zorder=5)
+            dynamic.extend([drone_pos, label])
+            delivered = sum(1 for _, _, dv in self.history[idx] if dv)
+            total = len(self.history[idx])
+            ax.set_title(f"Turn {idx} / {len(self.history) - 1}  "
+                         f"Delivered: {delivered / total}")
+        return dynamic

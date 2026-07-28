@@ -30,7 +30,7 @@ def main() -> None:
         simulator = Simulator()
         simulator.load_drones(res, graph.calcul_max_turns(res))
         turns = simulator.run(graph)
-        vizualiser = Visualizer(graph, simulator.history, 800)
+        vizualiser = Visualizer(graph, simulator.history, interval=800)
         vizualiser.render()
         print(f"=== Simulation finished in {turns} turns ===")
     except ValueError as e:
