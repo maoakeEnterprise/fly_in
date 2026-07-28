@@ -20,10 +20,21 @@ class Visualizer:
         self.interval = interval
 
     def render(self) -> None:
+        if not self.history:
+            return
+        dynamic: list[Artist] = []
         fig, ax = plt.subplots(figsize=(20, 20))
         ax.axis("off")
         self._draw_network(ax)
         self._draw_hub(ax)
+        FuncAnimation(
+            fig,
+            lambda idx: self._update(ax, idx, dynamic),
+            frames=len(self.history),
+            interval=self.interval,
+            blit=False,
+            repeat=False,
+        )
         plt.show()
 
     def _draw_network(self, ax: Axes) -> None:
@@ -55,7 +66,8 @@ class Visualizer:
             ax.annotate(name, (x, y), xytext=(0, 20),
                         textcoords="offset points", ha="center", zorder=6)
 
-    def _update(self, ax: Axes, idx: int, dynamic: list[Artist]) -> None:
+    def _update(self, ax: Axes, idx: int, dynamic: list[Artist]
+                ) -> list[Artist]:
         counts: dict[tuple[float, float], int] = {}
         for art in dynamic:
             art.remove()
@@ -76,5 +88,5 @@ class Visualizer:
             delivered = sum(1 for _, _, dv in self.history[idx] if dv)
             total = len(self.history[idx])
             ax.set_title(f"Turn {idx} / {len(self.history) - 1}  "
-                         f"Delivered: {delivered / total}")
+                         f"Delivered: {delivered} / {total}")
         return dynamic
