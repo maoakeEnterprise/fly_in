@@ -38,9 +38,16 @@ class Visualizer:
                 x1, y1 = self.graph.nodes[edge.dst].coord
                 ax.plot([x0, x1], [y0, y1], color="black", lw=1.4, zorder=1)
 
+    def _border(self, node: Node) -> tuple[str, float]:
+        if node.start:
+            return ("green", 2.4)
+        if node.end:
+            return ("red", 2.4)
+        return ("black", 1.1)
+
     def draw_hub(self, ax: Axes) -> None:
         for name, node in self.graph.nodes.items():
             x, y = node.coord
-            print(node.color)
-            ax.scatter(x, y, s=800, color=node.color, edgecolors="black", linewidths=1.1, zorder=2)
+            edgecolor, linewidth = self._border(node)
+            ax.scatter(x, y, s=800, color=node.color, edgecolors=edgecolor, linewidths=linewidth, zorder=2)
             ax.annotate(name, (x, y), xytext=(0, 20), textcoords="offset points", ha="center", zorder=6)
