@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+from matplotlib.backend_bases import KeyEvent
 from matplotlib.animation import FuncAnimation
 from matplotlib.artist import Artist
 from matplotlib.axes import Axes
@@ -16,6 +17,7 @@ class Visualizer:
         self.graph = graph
         self.history = history
         self.interval = interval
+        self.paused = False
 
     def _draw_network(self, ax: Axes) -> None:
         drawn = set()
@@ -96,7 +98,15 @@ class Visualizer:
                    markerfacecolor="gray",
                    markeredgecolor="black", markersize=11),
         ]
-        pass
+
+    def _on_key(self, event: KeyEvent) -> None:
+        if event.key != " ":
+            return
+        if self.paused:
+            self.anim.resume()
+        else:
+            self.anim.pause()
+        self.paused = not self.paused
 
     def render(self) -> None:
         if not self.history:
@@ -110,7 +120,7 @@ class Visualizer:
             handles=self._legend(), loc="lower center",
             ncol=5, fontsize=9
         )
-        FuncAnimation(
+        self.anim = FuncAnimation(
             fig,
             lambda idx: self._update(ax, idx, dynamic),
             frames=len(self.history),
@@ -118,9 +128,5 @@ class Visualizer:
             blit=False,
             repeat=False,
         )
-        delay = len(self.history) * self.interval + 3000
-        timer = fig.canvas.new_timer(interval=delay)
-        timer.single_shot = True
-        timer.add_callback(lambda: plt.close(fig))
-        timer.start()
+        fig.canvas.mpl_connect("key_press_event", self._on_key)
         plt.show()
