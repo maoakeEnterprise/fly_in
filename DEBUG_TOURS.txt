@@ -1,0 +1,330 @@
+================================================================================
+  POURQUOI JE SUIS A 67 TOURS AU LIEU DE 43
+  Map : maps/challenger/01_the_impossible_dream.txt  (25 drones)
+================================================================================
+
+Ce fichier explique le bug pas a pas. Rien n'est corrige : c'est a toi de le
+faire. Il y a une section "COMMENT VERIFIER" a la fin pour mesurer ton progres.
+
+
+--------------------------------------------------------------------------------
+1. LE SYMPTOME, MESURE PRECISEMENT
+--------------------------------------------------------------------------------
+
+J'ai lance ton code et note a quel tour chaque drone arrive au goal :
+
+    arrivees aux tours : 19, 21, 23, 25, 27, 29, ... , 63, 65, 67
+    ecart entre 2 arrivees : 2, 2, 2, 2, 2, 2, 2, 2, ...
+
+Deux informations la-dedans :
+
+  (a) Le PREMIER drone arrive au tour 19.
+      Or path_cost(chemin) = 19. Donc ton pathfinding trouve un chemin de
+      longueur optimale. CETTE PARTIE MARCHE. Ne la touche pas.
+
+  (b) Ensuite, il arrive UN drone TOUS LES 2 TOURS.
+      C'est la que tout se joue.
+
+Le calcul :
+
+    1er drone       : 19 tours
+    24 drones apres : 24 x 2 = 48 tours
+    TOTAL           : 19 + 48 = 67   <-- ton resultat
+
+Alors que si les drones arrivaient 1 par tour :
+
+    1er drone       : 19 tours
+    24 drones apres : 24 x 1 = 24 tours
+    TOTAL           : 19 + 24 = 43   <-- ton objectif
+
+=> Tout ton retard vient d'un DEBIT divise par deux.
+   Ce n'est PAS un probleme de longueur de chemin.
+
+
+--------------------------------------------------------------------------------
+2. POURQUOI LE DEBIT TOMBE A LA MOITIE
+--------------------------------------------------------------------------------
+
+Ton decompose() ne produit qu'UN SEUL chemin :
+
+    start -> gate_hell1 -> maze_trap_a1 -> maze_trap_a2 -> micro_gate1
+          -> overflow_hell1
+          -> conv_restricted1 -> conv_restricted2 -> conv_restricted3
+          -> final_merge -> final_torture1..5 -> impossible_goal
+
+Et il ne produit qu'un chemin parce que maxflow = 1.
+
+IMPORTANT : ce maxflow = 1 est CORRECT. Regarde la map :
+
+    final_torture2  max_drones=1
+    final_torture3  max_drones=1
+    final_torture4  max_drones=1
+    final_torture5  max_drones=1
+
+Elles sont en serie et c'est le seul acces au goal. Ton Ford-Fulkerson ne se
+trompe pas. Ne cherche pas de bug dans residual_graph.py.
+
+Le probleme est ce que tu FAIS de ce resultat.
+
+Ton chemin traverse conv_restricted1/2/3 : toutes en zone `restricted` avec
+max_drones=1. Or une zone restricted cap=1 ne peut recevoir un nouveau drone
+que TOUS LES 2 TOURS. Deroule :
+
+    tour T     | drone A arrive dans conv_restricted1
+    tour T+1   | A passe in_flight vers conv_restricted2
+               | -> conv_restricted1 est libre a partir de maintenant
+    tour T+2   | drone B peut enfin arriver dans conv_restricted1
+
+    => une chaine restricted cap=1 debite 0,5 drone / tour
+
+Alors que le goulot final (final_torture, zones NORMALES cap=1) accepte
+1 drone / tour :
+
+    tour T     | drone A arrive dans final_torture2
+    tour T+1   | A part vers final_torture3, B arrive dans final_torture2
+
+    => une chaine normale cap=1 debite 1 drone / tour
+
+Ton chemin unique est donc bride a 0,5 alors que la sortie peut absorber 1.
+Tu utilises la moitie de la capacite de la map.
+
+
+--------------------------------------------------------------------------------
+3. L'ERREUR DE FOND, EN UNE PHRASE
+--------------------------------------------------------------------------------
+
+    Le max flow te donne le NOMBRE DE CHEMINS DISJOINTS.
+    Il ne te donne PAS le DEBIT.
+
+Ton code assimile les deux : il voit maxflow = 1, en conclut "un chemin
+suffit", et envoie les 25 drones a la queue leu leu dessus.
+
+Mais un chemin qui traverse des zones restricted vaut "un demi-chemin" en
+terme de debit. Pour saturer une sortie a 1 drone/tour, il t'en faut DEUX en
+parallele.
+
+Et la map te les donne exprès :
+
+    false_hope3 --> conv_restricted1 -> 2 -> 3 --\
+    false_hope3 --> conv_restricted4 -> 5 -> 6 ---+--> final_merge (cap 5)
+    false_hope3 --> conv_restricted7 -> 8 -> 9 --/
+
+    + les bypass :
+      overflow_hell1 -> conv_restricted1
+      overflow_hell4 -> conv_restricted7
+      priority_trap1 -> conv_restricted4
+
+Trois chaines paralleles qui reconvergent sur final_merge (max_drones=5).
+Toute la map est construite autour de ce piege.
+
+
+--------------------------------------------------------------------------------
+4. LA PREUVE QUE 43 EST ATTEIGNABLE
+--------------------------------------------------------------------------------
+
+J'ai rejoue TON simulateur, sans rien y modifier, avec deux chemins de cout 19
+qui empruntent les deux bypass paralleles :
+
+  chemin A : start -> gate_hell1 -> maze_trap_a1 -> maze_trap_a2 -> micro_gate1
+             -> overflow_hell1 -> conv_restricted1 -> 2 -> 3
+             -> final_merge -> final_torture1..5 -> impossible_goal
+
+  chemin B : start -> gate_hell1 -> maze_trap_a1 -> maze_trap_a2 -> micro_gate1
+             -> overflow_hell4 -> conv_restricted7 -> 8 -> 9
+             -> final_merge -> final_torture1..5 -> impossible_goal
+
+  couts : [19, 19]
+  resultat : 43 tours
+  ecart entre arrivees : 1, 1, 1, 1, 1, 1, 1, 1, ... (que des 1 !)
+
+CONCLUSION IMPORTANTE :
+  Simulator, Drone, le parsing, le max flow : AUCUN bug la-dedans.
+  Ton simulateur atteint la borne theorique des qu'on lui donne le bon
+  routage. Le bug est uniquement dans le CHOIX et la REPARTITION des chemins.
+
+
+--------------------------------------------------------------------------------
+5. BUG N°1 : LA REPARTITION PAR BLOCS  (le plus facile, commence par la)
+--------------------------------------------------------------------------------
+
+Regarde Simulator.load_drones :
+
+    id = 0
+    j = 0
+    for i in count_d:
+        for _ in range(i):
+            self.drones.append(Drone(id, paths[j]))
+            id += 1
+        j += 1
+
+Avec paths = [A, B, C] et count_d = [9, 8, 8], ca donne :
+
+    drones 0 a 8   -> chemin A
+    drones 9 a 16  -> chemin B
+    drones 17 a 24 -> chemin C
+
+C'est une repartition PAR BLOCS CONTIGUS.
+
+Maintenant regarde run() :
+
+    self.drones = sorted(self.drones, key=lambda j: j.index, reverse=True)
+
+Au depart tous les drones ont index = 0. Le tri de Python est STABLE : a
+valeur egale, il conserve l'ordre d'insertion. Donc l'ordre reste 0, 1, 2, ...
+
+Consequence : les 9 premiers drones s'engouffrent TOUS sur le chemin A avant
+que le moindre drone ne touche le chemin B. Tes chemins paralleles sont
+utilises SEQUENTIELLEMENT. Tu paies le prix de 3 chemins sans en avoir le
+benefice.
+
+Mesure (3 chaines paralleles, memes chemins, meme repartition) :
+
+    repartition par blocs   [9,8,8] -> 68 tours   ecarts = 2,2,2,2,2,2,...
+    repartition round-robin         -> 46 tours   ecarts = 1,1,1,1,1,1,...
+
+    22 TOURS D'ECART juste sur l'ordre d'affectation des id.
+
+CE QU'IL FAUT FAIRE :
+  Le drone k doit partir sur le chemin k % len(paths), en respectant quand
+  meme les quotas de count_d (un chemin qui a recu tous ses drones sort de la
+  rotation).
+
+  Piste : au lieu de deux boucles imbriquees "pour chaque chemin, pour chaque
+  drone", fais UNE boucle "tant qu'il reste des drones a placer" qui tourne
+  sur les chemins et decremente une copie de count_d.
+
+  Attention a garder les id consecutifs a partir de 0 (le format de sortie
+  D<ID>-<zone> du sujet ne l'impose pas, mais c'est plus lisible).
+
+  Verifie avec un petit print que tu obtiens bien :
+    drone 0 -> chemin 0, drone 1 -> chemin 1, drone 2 -> chemin 2,
+    drone 3 -> chemin 0, ...
+
+
+--------------------------------------------------------------------------------
+6. BUG N°2 : calcul_max_turns IGNORE LE DEBIT
+--------------------------------------------------------------------------------
+
+    def calcul_max_turns(self, paths):
+        count_d = [0] * len(paths)
+        turn_paths = [self.path_cost(path) for path in paths]
+        for _ in range(self.total_drones):
+            i = min(range(len(paths)),
+                    key=lambda j: turn_paths[j] + count_d[j])
+            count_d[i] += 1
+        return count_d
+
+La formule "cout du chemin + nombre de drones deja places" est la formule
+classique. Mais le "+ count_d[j]" suppose implicitement qu'un chemin avale
+1 DRONE PAR TOUR.
+
+C'est faux pour un chemin qui contient une zone restricted cap=1 : il en
+avale 1 tous les 2 tours. Il faudrait :
+
+    turn_paths[j] + count_d[j] * periode[j]
+
+ou periode[j] = 2 si le chemin contient une zone restricted saturante,
+1 sinon. (Version simple pour commencer ; le cas exact depend aussi de
+max_drones et de max_link_capacity.)
+
+REMARQUE : tu as deja ecrit _get_nb_drone_min() dans graph.py, qui calcule la
+capacite minimale le long d'un chemin. ELLE N'EST APPELEE NULLE PART. C'est
+exactement la brique dont tu as besoin ici, a moitie ecrite. Relis-la, elle
+te donnera le "combien de drones tiennent en parallele sur ce chemin", qu'il
+faut croiser avec le cout d'entree des zones restricted.
+
+
+--------------------------------------------------------------------------------
+7. BUG N°3 : decompose() S'ARRETE AU MAX FLOW  (le vrai chantier)
+--------------------------------------------------------------------------------
+
+C'est le plus gros et le plus interessant a defendre en soutenance.
+
+maxflow = 1 ne veut PAS dire "1 chemin suffit". Il faut continuer a chercher
+des chemins tant que le DEBIT cumule de ton jeu de chemins est inferieur a la
+capacite du goulot de sortie.
+
+Note que ces chemins supplementaires n'ont pas besoin d'etre disjoints :
+mes 2 chemins de la section 4 partagent tout le debut (start -> micro_gate1)
+et toute la fin (final_merge -> goal). Ils ne se separent que sur le segment
+restricted, la ou le debit coince. C'est exactement ce qu'il faut.
+
+PISTE (sans tout refaire) :
+  1. Fais ta decomposition de max flow comme aujourd'hui.
+  2. Estime le debit du jeu de chemins obtenu (somme des 1/periode[j]).
+  3. Estime la capacite du goulot de sortie (la fin du chemin, zones normales
+     cap=1 -> 1 drone/tour).
+  4. Tant que debit < capacite de sortie : cherche un chemin alternatif qui
+     evite les zones deja saturees (par exemple un Dijkstra ou tu penalises
+     fortement les noeuds deja utilises par les chemins retenus), ajoute-le,
+     recalcule le debit.
+
+Ca ne sera pas optimal au sens mathematique, mais ca capture le cas de cette
+map et de toutes les maps "hard".
+
+
+--------------------------------------------------------------------------------
+8. ORDRE DE TRAVAIL CONSEILLE
+--------------------------------------------------------------------------------
+
+    1) Bug n°1 (round-robin dans load_drones)
+       -> ~5 lignes, aucun risque, gain immediat des que tu as 2+ chemins.
+          A faire en premier, meme si tu ne fais rien d'autre.
+
+    2) Bug n°2 (periode dans calcul_max_turns)
+       -> moyen, tu as deja _get_nb_drone_min() sous la main.
+
+    3) Bug n°3 (chercher des chemins au-dela du max flow)
+       -> le gros morceau, a faire en dernier.
+
+Les points 1 et 2 ameliorent deja les maps medium et hard. Le point 3 est le
+seul qui debloque vraiment le challenger.
+
+
+--------------------------------------------------------------------------------
+9. COMMENT VERIFIER
+--------------------------------------------------------------------------------
+
+Mesure la SUITE DES ARRIVEES, pas seulement le total. C'est ce qui te dit ou
+tu bloques :
+
+  - compte a quel tour apparait "impossible_goal" (ou le nom du end_hub) dans
+    chaque ligne de sortie
+  - calcule les ecarts entre deux arrivees consecutives
+
+  ecarts = 2, 2, 2, 2, ...  -> tu es bride par une chaine restricted
+  ecarts = 1, 1, 1, 1, ...  -> tu satures le goulot, tu es a l'optimum
+  ecarts irreguliers        -> conflit / attente quelque part, regarde quel
+                               noeud revient le plus souvent dans les tours
+                               ou personne n'avance
+
+Formule de reference pour savoir si tu es au bout :
+
+    tours_min = path_cost(chemin le plus court) + (nb_drones - 1) / debit_total
+
+  Sur cette map : 19 + 24 / 1 = 43.
+
+Cibles du sujet (VII.7) a re-verifier apres chaque correction :
+    easy   < 10 tours
+    medium 10-30 tours
+    hard   < 60 tours
+    challenger : record de reference 45 (optionnel, ne compte pas dans la note)
+
+Pense a relancer les maps easy/medium/hard apres chaque changement : le
+round-robin modifie l'ordre des drones, donc l'ordre des mouvements dans ta
+sortie. Le format D<ID>-<zone> reste valide, mais les lignes changent.
+
+
+--------------------------------------------------------------------------------
+10. CE QUI N'EST PAS EN CAUSE  (ne perds pas de temps dessus)
+--------------------------------------------------------------------------------
+
+    - parsing.py / translator.py      : OK
+    - residual_graph.py (Ford-Fulkerson, BFS, maxflow)  : OK, maxflow=1 est
+                                        la bonne reponse pour cette map
+    - Simulator.run / Drone           : OK, atteint la borne theorique des
+                                        qu'on lui donne le bon routage
+    - path_cost / entry_cost          : OK, le cout 19 est exact
+    - le visualizer                   : sans rapport
+
+================================================================================
