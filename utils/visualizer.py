@@ -34,7 +34,6 @@ class Visualizer:
                 ax.plot([x0, x1], [y0, y1], color="black", lw=1.4, zorder=1)
 
     def _border(self, node: Node) -> tuple[str, float]:
-        print(f"node name: {node.name} zone : {node.zone_type.value}")
         if node.start:
             return ("green", 2.4)
         if node.end:

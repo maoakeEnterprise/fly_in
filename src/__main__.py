@@ -20,14 +20,16 @@ def main() -> None:
         graph.load_nodes(translator.hubs)
         graph.load_edges(translator.connections)
         graph.load_commplete_edges(translator.connections)
+        pathfinder = graph.dijkstra_alg()
 
         residuals = ResidualGraph()
         residuals.build_residual(graph)
         residuals.maxflow(residuals.start_path, residuals.end_path)
-        res = residuals.decompose(residuals.start_path, residuals.end_path)
+        # res = residuals.decompose(residuals.start_path, residuals.end_path)
 
         simulator = Simulator()
-        simulator.load_drones(res, graph.calcul_max_turns(res))
+        simulator.load_drones([pathfinder.pathing],
+                              graph.calcul_max_turns([pathfinder.pathing]))
         turns = simulator.run(graph)
         vizualiser = Visualizer(graph, simulator.history, interval=800)
         vizualiser.render()
