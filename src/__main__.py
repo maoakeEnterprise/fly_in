@@ -1,5 +1,5 @@
 from utils import FlagManager, Parsing, Translator
-from utils import Graph, ResidualGraph
+from utils import Graph
 from utils import Simulator, Visualizer
 
 
@@ -22,11 +22,6 @@ def main() -> None:
         graph.load_commplete_edges(translator.connections)
         pathfinder = graph.dijkstra_alg()
 
-        residuals = ResidualGraph()
-        residuals.build_residual(graph)
-        residuals.maxflow(residuals.start_path, residuals.end_path)
-        # res = residuals.decompose(residuals.start_path, residuals.end_path)
-
         simulator = Simulator()
         simulator.load_drones([pathfinder.pathing],
                               graph.calcul_max_turns([pathfinder.pathing]))
@@ -41,6 +36,14 @@ def main() -> None:
     except (FileNotFoundError, PermissionError) as e:
         print("=======FILE===ERROR========")
         print(f"Message : {e}")
+        print("===========================")
+    except Exception as e:
+        print("======UNKNOW=====ERROR=====")
+        print(f"Message: {e}")
+        print("===========================")
+    except KeyboardInterrupt as e:
+        print("===========================")
+        print(f"Message: {e}")
         print("===========================")
 
 
