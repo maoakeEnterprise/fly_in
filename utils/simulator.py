@@ -137,21 +137,21 @@ class Simulator:
                     if dest not in link_usage[src]:
                         link_usage[src].setdefault(dest, 0)
                     if (self._check_link(graph, src, dest, link_usage)
-                       and self._check_hub(dest, graph, occupancy)):
-                        if graph.nodes[dest].zone_type == ZoneType.RESTRICTED:
-                            link_usage[src][dest] += 1
-                            drone.in_flight = True
-                            moves.append(f"D{drone.id}-{src}-{dest}")
-                            continue
-                        else:
-                            drone.index += 1
-                            link_usage[src][dest] += 1
-                            if dest not in occupancy:
-                                self._init_occupancy(occupancy, dest)
-                            occupancy[dest] += 1
-                            if dest == graph.get_end().name:
-                                drone.delivered = True
-                            moves.append(f"D{drone.id}-{dest}")
+                       and self._check_hub(dest, graph, occupancy) and graph.nodes[dest].zone_type != ZoneType.RESTRICTED):
+                        drone.index += 1
+                        link_usage[src][dest] += 1
+                        if dest not in occupancy:
+                            self._init_occupancy(occupancy, dest)
+                        occupancy[dest] += 1
+                        if dest == graph.get_end().name:
+                            drone.delivered = True
+                        moves.append(f"D{drone.id}-{dest}")
+                    elif (self._check_link(graph, src, dest, link_usage)
+                                           and graph.nodes[dest].zone_type == ZoneType.RESTRICTED):
+                        link_usage[src][dest] += 1
+                        drone.in_flight = True
+                        moves.append(f"D{drone.id}-{src}-{dest}")
+                        continue
                     else:
                         if src not in occupancy:
                             self._init_occupancy(occupancy, src)
