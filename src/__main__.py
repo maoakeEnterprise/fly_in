@@ -12,8 +12,8 @@ def main() -> None:
         translator = Translator(path_file)
         error_log = parsing.parse_data()
         if error_log:
-            for _, line in error_log:
-                print(f"Parsing error near line {line}")
+            for _, line, log in error_log:
+                print(f"Parsing error near line {line} : {log}")
             return
         translator.translate()
         graph = Graph(translator.nb_drones)
