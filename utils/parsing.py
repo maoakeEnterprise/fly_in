@@ -103,33 +103,55 @@ class Parsing():
     """
         verify if hub is unique
     """
-    def _unique_hub(self, data: list[str], name_hub: str) -> tuple[bool, int, str]:
+    def _unique_hub(self, data: list[str], name_hub: str
+                    ) -> tuple[bool, int, str]:
         len_nh = 0
-        index = 0
+        index = 1
         for line in data:
+            if self._skip_line(line) or self._ignore_hashtag(line):
+                index += 1
+                continue
             tab_l = line.split(":")
             new_l = tab_l[0].strip()
             if not new_l.startswith(name_hub) and name_hub in new_l:
                 return (False, index)
             len_nh += line.count(name_hub)
             if len_nh > 1:
+                print(line)
                 return (False, index,  "This hub is no unique")
             index += 1
         return (True, index, "")
 
+    def _start_end_present(self, data: list[str]) -> tuple[bool, int, str]:
+        start = False
+        end = False
+        for line in data:
+            tab_l = line.split(":")
+            if tab_l[0] == HubName.START_HUB.value:
+                start = True
+            if tab_l[0] == HubName.END_HUB.value:
+                end = True
+        if start is False or end is False:
+            return (False, -1, "Must have one start_hub or end_hub")
+        return (True, 0, "")
+
     """
         verify if the line is splitted in two
     """
-    def _is_len_split_two_point(self, data: list[str]) -> tuple[bool, int, str]:
-        index = 0
+    def _is_len_split_two_point(self, data: list[str]
+                                ) -> tuple[bool, int, str]:
+        index = 1
         for line in data:
             if self._skip_line(line):
+                index += 1
                 continue
             if self._ignore_hashtag(line):
+                index += 1
                 continue
             tab_l = line.split(":")
             if len(tab_l) != 2:
-                return (False, index, "Too much data in this line format > data1 : data2")
+                return (False, index, "Too much data in this "
+                                      "line format > data1 : data2")
             index += 1
         return (True, index, "")
 
@@ -159,7 +181,8 @@ class Parsing():
             res = self._get_name_in_line(line, index)
             name = res[2]
             if res[0] is False or name in names:
-                return (False, index, "format name hub is not good or unique name hub")
+                return (False, index, "format name hub is not good or unique"
+                                      "name hub")
             names.add(name)
             index += 1
         return (True, index, "")
@@ -238,6 +261,17 @@ class Parsing():
             if len(k_v) != 2:
                 return False
             if k_v[0] in keys_c:
+                if k_v[0].strip() == "zone":
+                    if k_v[1].strip() not in KeyNameZone:
+                        return False
+                if (k_v[0].strip() == "max_drones"
+                   or k_v[0].strip() == "max_link_capacity"):
+                    try:
+                        c = int(k_v[1])
+                        if c < 1:
+                            return False
+                    except Exception:
+                        return False
                 keys_c.remove(k_v[0])
             else:
                 return False
@@ -250,8 +284,9 @@ class Parsing():
         line_s = line.split(":")
         name = line_s[0]
         index_md = 2 if name == "connection" else 3
+        add_md = 0 if name == "connection" else 1
         data = line_s[1].strip().split(" ")
-        if len(data) < index_md + 1:
+        if len(data) < index_md + add_md:
             return False
         return True
 
@@ -305,7 +340,7 @@ class Parsing():
     """
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int, str]:
         coords: set[tuple[int, int]] = set()
-        index = 0
+        index = 1
         for line in data:
             if self._ignore_hashtag(line):
                 index += 1
@@ -321,7 +356,7 @@ class Parsing():
                 continue
             coord = self._get_coord_in_line(line)
             if coord[0] is False:
-                return (False, index, "the coord is not unique")
+                return (False, index, "Something wrong on this line")
             if coord[1] in coords:
                 return (False, index, "the coord is not unique")
             coords.add(coord[1])
@@ -333,7 +368,7 @@ class Parsing():
     """
     def _is_key_valid(self, data: list[str]) -> tuple[bool, int, str]:
         keys = self._get_main_keys(data)
-        index = 0
+        index = 1
         verif_key = {
             KeyName.HUB.value,
             KeyName.START_HUB.value,
@@ -351,7 +386,7 @@ class Parsing():
             if key not in verif_key:
                 return (False, index, "The key is not valid")
             index += 1
-        return (True, index , "")
+        return (True, index, "")
 
     def parse_data(self) -> list[tuple[bool, int]]:
         self._load_data_from_file()
@@ -378,11 +413,12 @@ class Parsing():
         print("CHECK: UNIQ HUB ON START ANd END")
         error_log.append(self._unique_hub(self.data, HubName.START_HUB.value))
         error_log.append(self._unique_hub(self.data, HubName.END_HUB.value))
+        error_log.append(self._start_end_present(self.data))
         print("CHECK: LEN SPLIT WITH TWO POINT")
         error_log.append(self._is_len_split_two_point(self.data))
         print("CHECK KEY VALID")
         error_log.append(self._is_key_valid(self.data))
-        print("CHECK UNIQ NAME HUB AND COORD")
+        print("CHECK UNIQ NAME HUB AND COORD AND NORMED LINE")
         error_log.append(self._unique_name_hub(self.data))
         error_log.append(self._unique_coord_hub(self.data))
         error_log = [tup for tup in error_log if tup[0] is False]
@@ -401,7 +437,9 @@ class Parsing():
             if index == 0 and signal_drones:
                 signal_drones = False
                 if not self._first_line(line, index):
-                    error_log.append((False, true_index, "the nb drone is not present on the first line"))
+                    error_log.append((False, true_index,
+                                      "the nb drone is not "
+                                      "present on the first line"))
                     continue
             else:
                 key = self._get_first_key(line)
@@ -409,36 +447,47 @@ class Parsing():
                     if self._there_is_metadata(line):
                         res_m = self._get_metadata_in_line(line)
                         if res_m[0] is False:
-                            error_log.append((False, true_index, "Something is wrong in this metadata"))
+                            error_log.append((False, true_index,
+                                              "Something is wrong in"
+                                              " this metadata"))
                             continue
                         res_mp = self._parse_metadata(res_m[1],
                                                       metadata_key_hub)
                         if res_mp is False:
-                            error_log.append((False, true_index, "The key in metadata is wrong"))
+                            error_log.append((False, true_index,
+                                              "The key in metadata is wrong"))
                             continue
                 elif key == "connection":
                     res_cn = self._parse_data_connection(line)
                     if res_cn[0] is False:
-                        error_log.append((False, true_index, "There is an error in the connection"))
+                        error_log.append((False, true_index,
+                                          "There is an error in the "
+                                          "connection"))
                         continue
                     res_ce = self._connection_names_exist(names_hub, res_cn[1])
                     if res_ce is False:
-                        error_log.append((False, true_index, "Something is wrong with the name"))
+                        error_log.append((False, true_index,
+                                          "Something is wrong with the name"))
                         continue
                     res_uc = self._uniq_connection(connections, res_cn[1])
                     if res_uc is False:
-                        error_log.append((False, true_index, "The connection is not uniq"))
+                        error_log.append((False, true_index,
+                                          "The connection is not uniq"))
                         continue
                     connections.append(res_cn[1])
                     if self._there_is_metadata(line):
                         res_m = self._get_metadata_in_line(line)
                         if res_m[0] is False:
-                            error_log.append((False, true_index, "Something is wrong in this metadata"))
+                            error_log.append((False, true_index,
+                                              "Something is wrong"
+                                              " in this metadata"))
                             continue
                         res_mp = self._parse_metadata(res_m[1],
                                                       metadata_key_conn)
                         if res_mp is False:
-                            error_log.append((False, true_index, "Something is wrong in the key metadata"))
+                            error_log.append((False, true_index,
+                                              "Something is wrong "
+                                              "in the key metadata"))
                             continue
             index += 1
             true_index += 1

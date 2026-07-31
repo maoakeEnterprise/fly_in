@@ -14,19 +14,24 @@ FLAG_T = tests/test_flag_manager.py
 
 PARS_T = tests/test_parsing.py
 
-.PHONY: install run norming norming_mp lint clean copy_data unzip_data test_flag_manager
+BAD_T = tests/check_bad_maps.py
+
+.PHONY: install run norming norming_mp lint clean copy_data unzip_data test_flag_manager check_bad_maps
 
 install:
 	uv sync
 
 run:
-	uv run python -m src --graph --launch_C1
+	uv run python -m src --graph --launch_E1
 
 test_flag_manager:
 	PYTHONPATH=. uv run pytest $(FLAG_T)
 
 test_parsing:
 	PYTHONPATH=. uv run pytest $(PARS_T)
+
+check_bad_maps:
+	PYTHONPATH=. uv run python $(BAD_T)
 
 norming:
 	watch uv run flake8 $(SRC) $(UTILS) $(TESTS)
