@@ -114,7 +114,7 @@ class Parsing():
             tab_l = line.split(":")
             new_l = tab_l[0].strip()
             if not new_l.startswith(name_hub) and name_hub in new_l:
-                return (False, index)
+                return (False, index, "This hub is no unique")
             len_nh += line.count(name_hub)
             if len_nh > 1:
                 print(line)
@@ -266,11 +266,10 @@ class Parsing():
                         return False
                 if (k_v[0].strip() == "max_drones"
                    or k_v[0].strip() == "max_link_capacity"):
-                    try:
-                        c = int(k_v[1])
-                        if c < 1:
-                            return False
-                    except Exception:
+                    if k_v[1].isdigit() is False:
+                        return False
+                    c = int(k_v[1])
+                    if c < 1:
                         return False
                 keys_c.remove(k_v[0])
             else:
@@ -409,22 +408,16 @@ class Parsing():
         true_index = 1
         signal_drones = True
 
-        print("STARTING THE FIRST PHASE IN THE PARSING")
-        print("CHECK: UNIQ HUB ON START ANd END")
         error_log.append(self._unique_hub(self.data, HubName.START_HUB.value))
         error_log.append(self._unique_hub(self.data, HubName.END_HUB.value))
         error_log.append(self._start_end_present(self.data))
-        print("CHECK: LEN SPLIT WITH TWO POINT")
         error_log.append(self._is_len_split_two_point(self.data))
-        print("CHECK KEY VALID")
         error_log.append(self._is_key_valid(self.data))
-        print("CHECK UNIQ NAME HUB AND COORD AND NORMED LINE")
         error_log.append(self._unique_name_hub(self.data))
         error_log.append(self._unique_coord_hub(self.data))
         error_log = [tup for tup in error_log if tup[0] is False]
         if len(error_log) > 0:
             return error_log
-        print("STARTING THE SECOND PHASE FOR THE METADATA")
         names_hub = self._get_names_hub()
 
         for line in self.data:
