@@ -6,7 +6,7 @@ class FlagManager:
         self.args: argparse.Namespace | None = None
 
     """
-        define every flag one flag for each map 
+        define every flag one flag for each map
         and default launch to a custom map
     """
     def init_args(self, arglist: list[str] | None) -> None:
