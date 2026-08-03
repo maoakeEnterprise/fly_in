@@ -5,7 +5,7 @@ class Hub(BaseModel):
     """A parsed zone carrying its raw metadata.
 
     The ``color`` given in the map file is kept verbatim; validating
-    whether it is a renderable color is left to the visual layer.
+    whether it is a renderable color is left to the graph.
     """
 
     type_hub: str

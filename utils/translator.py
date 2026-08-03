@@ -4,15 +4,25 @@ from utils.connection import Connection
 
 
 class Translator(Parsing):
+    """
+        this class will be use by security to ensure if the value is correct
+        with the hub and the connection
+    """
     def __init__(self, path: str) -> None:
         self.hubs: list[Hub] = []
         self.connections: list[Connection] = []
         self.nb_drones: int = 0
         super().__init__(path)
 
+    """
+        load the data from the file
+    """
     def _load_data_from_file(self) -> None:
         return super()._load_data_from_file()
 
+    """
+        get nb drones
+    """
     def _get_nb_drones(self) -> int:
         res: int = 0
         for line in self.data:
@@ -26,9 +36,15 @@ class Translator(Parsing):
                 res = int(data[1])
         return res
 
+    """
+        get the metadata
+    """
     def _get_metadata_str(self, line: str) -> str:
         return super()._get_metadata_in_line(line)[1]
 
+    """
+        fit the metadata
+    """
     def _fit_metadata(self, line: str) -> dict[str, str]:
         line_s = line.strip().split(":")
         metadata_str = self._get_metadata_str(line)
@@ -58,21 +74,37 @@ class Translator(Parsing):
                     metadata["max_drones"] = sub_data[1]
         return metadata
 
+    """
+        get hub name
+    """
     def _get_hub_name(self, line: str) -> str:
         return super()._get_name_in_line(line, 0)[2]
 
+    """
+        get coord
+    """
     def _get_coord(self, line: str) -> tuple[int, int]:
         return super()._get_coord_in_line(line)[1]
 
+    """
+        get connection in line
+    """
     def _get_connection_in_line(self, line: str) -> set[str]:
         return super()._parse_data_connection(line)[1]
 
+    """
+        get the line nb drone
+    """
     def is_line_nb_drones(self, line: str) -> bool:
         line_s = line.split(":")
         if line_s[0].strip() == "nb_drones":
             return True
         return False
 
+    """
+        will translate every data on the file and put this
+        in the class hub and connection
+    """
     def translate(self) -> None:
         self._load_data_from_file()
         self.nb_drones = self._get_nb_drones()

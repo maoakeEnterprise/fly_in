@@ -113,12 +113,11 @@ class Parsing():
                 continue
             tab_l = line.split(":")
             new_l = tab_l[0].strip()
-            print(new_l)
+
             if not new_l.startswith(name_hub) and name_hub in new_l:
                 return (False, index, "This hub is no unique")
             len_nh += line.count(name_hub)
             if len_nh > 1:
-                print(line)
                 return (False, index,  "This hub is no unique")
             index += 1
         return (True, index, "")
@@ -387,6 +386,12 @@ class Parsing():
                 return (False, index, "The key is not valid")
             index += 1
         return (True, index, "")
+
+    """
+        Use all the little functions i parse in two step
+        i check key, uniq hub, start end present, the norm on the data
+        and after this step i check the metadata and nb_drones if on first line
+    """
 
     def parse_data(self) -> list[tuple[bool, int, str]]:
         self._load_data_from_file()

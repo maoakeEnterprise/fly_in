@@ -107,6 +107,11 @@ class Simulator:
         return frame
 
     def run(self, graph: Graph) -> int:
+        """
+            make every drone move on the path
+            and snap every turn in history cause we will need this
+            in  the vizualiser print every turn the move
+        """
         turns = 0
         self.history.append(self._snapshot(graph))
         while self._is_every_drones_delivered() is False:
@@ -137,7 +142,8 @@ class Simulator:
                     if dest not in link_usage[src]:
                         link_usage[src].setdefault(dest, 0)
                     if (self._check_link(graph, src, dest, link_usage)
-                       and self._check_hub(dest, graph, occupancy) and graph.nodes[dest].zone_type != ZoneType.RESTRICTED):
+                       and self._check_hub(dest, graph, occupancy)
+                       and graph.nodes[dest].zone_type != ZoneType.RESTRICTED):
                         drone.index += 1
                         link_usage[src][dest] += 1
                         if dest not in occupancy:
@@ -147,7 +153,8 @@ class Simulator:
                             drone.delivered = True
                         moves.append(f"D{drone.id}-{dest}")
                     elif (self._check_link(graph, src, dest, link_usage)
-                                           and graph.nodes[dest].zone_type == ZoneType.RESTRICTED):
+                          and graph.nodes[dest].zone_type == ZoneType.
+                          RESTRICTED):
                         link_usage[src][dest] += 1
                         drone.in_flight = True
                         moves.append(f"D{drone.id}-{src}-{dest}")

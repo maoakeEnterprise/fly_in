@@ -46,6 +46,9 @@ class Node:
         if type_hub == "end_hub":
             self.end = True
 
+    """
+        get the cost to enter on a hub cause of restricted one or two
+    """
     def entry_cost(self) -> int:
         if self.start is True:
             return (0)
@@ -53,6 +56,9 @@ class Node:
             return (2)
         return (1)
 
+    """
+        debug function to get some data on the node
+    """
     def print_node(self) -> None:
         print(f"Name: {self.name}")
         print(f"Coord: {self.coord}")
@@ -68,12 +74,18 @@ class Edge:
         self.dst = dst
         self.max_link = max_link
 
+    """
+        debug function
+    """
     def print_edge(self) -> None:
         print(f"dest: {self.dst}")
         print(f"max_link: {self.max_link}")
 
 
 class Path_Finder:
+    """
+        will use this to stock the number of turns and pathing for the drones
+    """
     def __init__(self, pathing: list[str], turns: int, prio: int):
         self.pathing: list[str] = pathing
         self.turns: int = turns
@@ -88,6 +100,9 @@ class Graph:
         self.complete_edges: dict[str, list[Edge]] = {}
         self.total_drones = total_drones
 
+    """
+        load the edges need to be call in first before the algo
+    """
     def load_edges(self, connections: list[Connection]) -> None:
         for connection in connections:
             a, b = connection.name_hub1, connection.name_hub2
@@ -100,6 +115,9 @@ class Graph:
             self.edges[a].append(Edge(b, connection.max_link))
             self.edges[b].append(Edge(a, connection.max_link))
 
+    """
+        load complete with the blocked zone in this
+    """
     def load_commplete_edges(self, connections: list[Connection]) -> None:
         for connection in connections:
             a, b = connection.name_hub1, connection.name_hub2
@@ -112,6 +130,9 @@ class Graph:
             self.complete_edges[a].append(Edge(b, connection.max_link))
             self.complete_edges[b].append(Edge(a, connection.max_link))
 
+    """
+        try if the color is in ColorType if not i send a default color
+    """
     def set_color(self, color: str) -> str:
         try:
             ColorType(color)
@@ -119,6 +140,10 @@ class Graph:
         except ValueError:
             return "gray"
 
+    """
+        load nodes with the hublist cause node = hub its the same
+        and load the complete zone with the blocked zone
+    """
     def load_nodes(self, hubs: list[Hub]) -> None:
         for hub in hubs:
             node = Node(
@@ -134,12 +159,18 @@ class Graph:
                 continue
             self.nodes[hub.name] = node
 
+    """
+        debug nodes print data for each node
+    """
     def debug_nodes(self) -> None:
         for key, node in self.nodes.items():
             print("=======================")
             print(key.upper())
             node.print_node()
 
+    """
+        debug edges print data for each edge
+    """
     def debug_edges(self) -> None:
         for key, edges in self.edges.items():
             print("=======================")
@@ -147,24 +178,49 @@ class Graph:
             for edge in edges:
                 edge.print_edge()
 
+    """
+        get a node by the name
+    """
     def get_node(self, name: str) -> Node:
         return self.nodes[name]
 
+    """
+        get the start node
+    """
     def get_start(self) -> Node:
         for node in self.nodes.values():
             if node.start is True:
                 return node
         return node
 
+    """
+        get the end node
+    """
     def get_end(self) -> Node:
         for node in self.nodes.values():
             if node.end is True:
                 return node
         return node
 
+    """
+        get the neighbors by the name of a node cause a
+        node can have many connections
+    """
     def get_neighbors(self, name: str) -> list[Edge]:
         return self.edges[name]
 
+    """
+        apply the dijkstra algorithm
+        we put in a tab dist for each node to inf like this
+        we can found if the node is explore or not and
+        tab prio_cnt is here to tie break if the cost to node A at
+        node B with different path as the same cost we check the number
+        of time each path get in a zone priority but its not enough so i add
+        another argument tie for final decision
+        settled is here to check if we already visited this node.
+        previous is here to stock the pathing
+        and heap is used to add and pop like the dijkstra example online.
+    """
     def dijkstra_alg(self) -> Path_Finder:
         start, end = self.get_start(), self.get_end()
         dist: dict[str, float] = {name: float("inf")
@@ -208,6 +264,9 @@ class Graph:
             prio=prio_cnt[end.name]
         )
 
+    """
+        will be usefull to get the pathing complete in reverse
+    """
     def _get_path(self, prev: dict[str, str]) -> list[str]:
         end = self.get_end()
         start = self.get_start()
@@ -220,6 +279,9 @@ class Graph:
         path.reverse()
         return path
 
+    """
+        to get the cost and check if its not start
+    """
     def path_cost(self, path: list[str]) -> int:
         cost = 0
         for node in path:
@@ -228,6 +290,10 @@ class Graph:
             cost += self.nodes[node].entry_cost()
         return cost
 
+    """
+        to get the minimum drone you can send on a path
+        we need to check the link capacity and the node capacity
+    """
     def _get_nb_drone_min(self, path: list[str]) -> int:
         nb_max = float("inf")
         for node in path:
@@ -241,6 +307,9 @@ class Graph:
                         nb_max = min(nb_max, edge.max_link)
         return int(nb_max)
 
+    """
+        to get the max turn on every path give.
+    """
     def calcul_max_turns(self, paths: list[list[str]]) -> list[int]:
         count_d = [0] * len(paths)
         turn_paths = [self.path_cost(path) for path in paths]

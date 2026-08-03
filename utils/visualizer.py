@@ -18,7 +18,11 @@ class Visualizer:
         self.history = history
         self.interval = interval
         self.paused = False
+        self.closed = False
 
+    """
+        will draw the edges/connections on the graph
+    """
     def _draw_network(self, ax: Axes) -> None:
         drawn = set()
         for name, edges in self.graph.complete_edges.items():
@@ -33,6 +37,9 @@ class Visualizer:
                 x1, y1 = self.graph.complete_nodes[edge.dst].coord
                 ax.plot([x0, x1], [y0, y1], color="black", lw=1.4, zorder=1)
 
+    """
+        to define the color border
+    """
     def _border(self, node: Node) -> tuple[str, float]:
         if node.start:
             return ("green", 2.4)
@@ -44,6 +51,9 @@ class Visualizer:
             return ("gray", 4.4)
         return ("black", 1.1)
 
+    """
+        draw the hub/node
+    """
     def _draw_hub(self, ax: Axes) -> None:
         for name, node in self.graph.complete_nodes.items():
             x, y = node.coord
@@ -53,6 +63,9 @@ class Visualizer:
             ax.annotate(name, (x, y), xytext=(0, 20),
                         textcoords="offset points", ha="center", zorder=6)
 
+    """
+        update the position for each drone on the map
+    """
     def _update(self, ax: Axes, idx: int, dynamic: list[Artist]
                 ) -> list[Artist]:
         counts: dict[tuple[float, float], int] = {}
@@ -76,8 +89,13 @@ class Visualizer:
             total = len(self.history[idx])
             ax.set_title(f"Turn {idx} / {len(self.history) - 1}  "
                          f"Delivered: {delivered} / {total}")
+            if idx == (len(self.history) - 1):
+                self._shedule_close()
         return dynamic
 
+    """
+        some legend to explain the color code used
+    """
     def _legend(self) -> list[Line2D]:
         return [
             Line2D([0], [0], marker="o", color="white", label="start",
@@ -98,6 +116,9 @@ class Visualizer:
                    markeredgecolor="black", markersize=11),
         ]
 
+    """
+        to make a pause on the animation used to debug
+    """
     def _on_key(self, event: KeyEvent) -> None:
         if event.key != " ":
             return
@@ -107,11 +128,29 @@ class Visualizer:
             self.anim.pause()
         self.paused = not self.paused
 
+    """
+        close the window
+    """
+    def _shedule_close(self) -> None:
+        if self.closed:
+            return
+        self.closed = True
+        self.timer = self.fig.canvas.new_timer(
+            interval=self.interval
+        )
+        self.timer.single_shot = True
+        self.timer.add_callback(lambda: plt.close(self.fig))
+        self.timer.start()
+
+    """
+        to draw everything and put the animation in the class FuncAnimation
+    """
     def render(self) -> None:
         if not self.history:
             return
         dynamic: list[Artist] = []
         fig, ax = plt.subplots(figsize=(20, 20))
+        self.fig = fig
         ax.axis("off")
         self._draw_network(ax)
         self._draw_hub(ax)

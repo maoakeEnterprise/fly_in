@@ -5,6 +5,10 @@ class FlagManager:
     def __init__(self) -> None:
         self.args: argparse.Namespace | None = None
 
+    """
+        define every flag one flag for each map 
+        and default launch to a custom map
+    """
     def init_args(self, arglist: list[str] | None) -> None:
         parser = argparse.ArgumentParser(
             prog="Fly in",
@@ -100,6 +104,9 @@ class FlagManager:
             args = parser.parse_args()
         self.args = args
 
+    """
+        get every flag
+    """
     def _get_args_values(self) -> list[str]:
         values: list[str] = []
         args = self.args
@@ -122,6 +129,9 @@ class FlagManager:
 
         return values
 
+    """
+        check if the flags are good
+    """
     def _flag_check(self, values: list[str]) -> bool:
         none_count = values.count("None")
 
@@ -130,6 +140,9 @@ class FlagManager:
                              " flag up flag up should be one")
         return True
 
+    """
+        get the path from the flag
+    """
     def get_path_from_flag(self) -> str:
         v = self._get_args_values()
         path = ""
