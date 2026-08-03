@@ -113,6 +113,7 @@ class Parsing():
                 continue
             tab_l = line.split(":")
             new_l = tab_l[0].strip()
+            print(new_l)
             if not new_l.startswith(name_hub) and name_hub in new_l:
                 return (False, index, "This hub is no unique")
             len_nh += line.count(name_hub)
@@ -127,9 +128,9 @@ class Parsing():
         end = False
         for line in data:
             tab_l = line.split(":")
-            if tab_l[0] == HubName.START_HUB.value:
+            if tab_l[0].strip() == HubName.START_HUB.value:
                 start = True
-            if tab_l[0] == HubName.END_HUB.value:
+            if tab_l[0].strip() == HubName.END_HUB.value:
                 end = True
         if start is False or end is False:
             return (False, -1, "Must have one start_hub or end_hub")
@@ -159,7 +160,7 @@ class Parsing():
         get the main keys in index 0
     """
     def _get_main_keys(self, data: list[str]) -> list[str]:
-        keys = [line.split(":")[0] for line in data]
+        keys = [line.strip().split(":")[0] for line in data]
         return keys
 
     """
@@ -387,7 +388,7 @@ class Parsing():
             index += 1
         return (True, index, "")
 
-    def parse_data(self) -> list[tuple[bool, int]]:
+    def parse_data(self) -> list[tuple[bool, int, str]]:
         self._load_data_from_file()
         connections: list[set[str]] = []
         error_log: list[tuple[bool, int, str]] = []
