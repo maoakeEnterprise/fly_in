@@ -1,27 +1,50 @@
+"""Turn by turn engine of the Fly-in simulator.
+
+Takes the routes computed by :mod:`utils.graph`, spreads the fleet over
+them and moves every drone one turn at a time while enforcing the zone
+capacities and the link capacities. Each turn is printed on stdout and
+kept in a history the visualizer replays afterwards.
+"""
 from utils import Drone
 from utils import Graph
 from utils import ZoneType
 
-"""
-    make an object to who get the a list of tuple in this tuple he will
-    get the id drone, the coord in float, and a bool to know if he is delivered
-    or not
-"""
 Frame = list[tuple[int, tuple[float, float], bool]]
+"""State of the whole fleet at one turn.
+
+One tuple per drone, holding its id, its position as floats, since a
+drone flying over a restricted link sits halfway between two zones, and
+whether it already reached the end zone.
+"""
 
 
 class Simulator:
-    """simulation to follow every drone turn by turn
-       drone will help to follow the turns
-       history will help for the vizualizer
+    """Fleet mover, replaying every drone turn by turn.
+
+    Attributes:
+        drones: Fleet being moved, filled by :meth:`load_drones`. It is
+            re-sorted at every turn so the drones closest to the end
+            zone move first and free their spot.
+        history: One :data:`Frame` per turn, plus the initial one, kept
+            for the visualizer.
     """
 
     def __init__(self) -> None:
+        """Build an empty simulator, with no drone and no history."""
         self.drones: list[Drone] = []
         self.history: list[Frame] = []
 
     def load_drones(self, paths: list[list[str]], count_d: list[int]) -> None:
-        """init every drone
+        """Create the fleet, giving each drone the route it must follow.
+
+        Drone ids are handed out in order, so the drones of the first
+        path get the lowest ones.
+
+        Args:
+            paths: Routes to spread the fleet over, each one a list of
+                zone names from the start zone to the end zone.
+            count_d: How many drones to put on each path, aligned with
+                ``paths``.
         """
         id = 0
         j = 0
@@ -32,7 +55,11 @@ class Simulator:
             j += 1
 
     def _is_every_drones_delivered(self) -> bool:
-        """to know if every drone is in the end or not
+        """Tell whether the whole fleet reached the end zone.
+
+        Returns:
+            True once every drone is delivered, which is what stops
+            the loop of :meth:`run`.
         """
         for drone in self.drones:
             if drone.delivered is False:
@@ -40,7 +67,16 @@ class Simulator:
         return True
 
     def _max_link(self, graph: Graph, src: str, dst: str) -> int:
-        """get the max link on a link from src and dst
+        """Give how many drones may take a link at the same turn.
+
+        Args:
+            graph: Zone network holding the links.
+            src: Zone the link starts from.
+            dst: Zone the link goes to.
+
+        Returns:
+            The capacity of the link, or 0 if no link joins the two
+            zones, which then forbids any move.
         """
         for node in graph.edges[src]:
             if node.dst == dst:
@@ -49,19 +85,40 @@ class Simulator:
 
     def _init_link_(self, link_usage: dict[str, dict[str, int]],
                     src: str, dest: str) -> None:
-        """init the link usage to 0 cause no drone never be on this link
+        """Start counting a link, no drone took it yet this turn.
+
+        Args:
+            link_usage: Per turn counter, keyed by source zone then by
+                destination zone. Modified in place.
+            src: Zone the link starts from.
+            dest: Zone the link goes to.
         """
         link_usage.setdefault(src, {})
         link_usage[src].setdefault(dest, 0)
 
     def _init_occupancy(self, occupancy: dict[str, int], dest: str) -> None:
-        """ init the occupancy cause no drone never be on this hub
+        """Start counting a zone, no drone sits on it yet this turn.
+
+        Args:
+            occupancy: Per turn counter, keyed by zone name. Modified
+                in place.
+            dest: Zone to start counting.
         """
         occupancy.setdefault(dest, 0)
 
     def _check_link(self, graph: Graph, src: str, dest: str,
                     link_usage: dict[str, dict[str, int]]) -> bool:
-        """ return a bool to know if the link is saturate or not
+        """Tell whether a link still has room for one more drone.
+
+        Args:
+            graph: Zone network holding the link capacities.
+            src: Zone the link starts from.
+            dest: Zone the link goes to.
+            link_usage: Per turn counter of the links already taken.
+
+        Returns:
+            True while the link is not saturated, False once as many
+            drones as its capacity already took it this turn.
         """
         if link_usage[src][dest] >= self._max_link(graph, src, dest):
             return False
@@ -69,7 +126,19 @@ class Simulator:
 
     def _check_hub(self, dest: str, graph: Graph,
                    occupancy: dict[str, int]) -> bool:
-        """ check a bool to know if the hub is saturate or not
+        """Tell whether a zone still has room for one more drone.
+
+        The zone is added to ``occupancy`` first if it is not tracked
+        yet, so the check never fails on a missing key.
+
+        Args:
+            dest: Zone a drone wants to enter.
+            graph: Zone network holding the zone capacities.
+            occupancy: Per turn counter of the drones on each zone.
+
+        Returns:
+            True while the zone is not saturated, False once it holds
+            as many drones as its capacity.
         """
         if dest not in occupancy:
             self._init_occupancy(occupancy, dest)
@@ -78,15 +147,32 @@ class Simulator:
         return True
 
     def _print_turn(self, moves: list[str]) -> None:
-        """Print all move on the turn
+        """Print every move of the turn on a single line.
+
+        Args:
+            moves: Moves already formatted, ``D<id>-<zone>`` for a
+                landing and ``D<id>-<src>-<dst>`` for a take off over
+                a restricted zone.
         """
         print(" ".join(moves))
 
     def _drone_coord(self, graph: Graph,
                      drone: Drone) -> tuple[float, float]:
-        """return the actual position on a drone we return float
-           cause some drone can be on the link if he is on a restricted hub
-           like this we divide by two from the src and the dst
+        """Give the position to draw a drone at, for the current turn.
+
+        A drone in flight is not on a zone yet, since entering a
+        restricted zone takes two turns, so it is placed halfway
+        between the zone it left and the one it aims at. That is why
+        the coordinates are floats and not the ints of the zones.
+
+        Args:
+            graph: Zone network holding the zone coordinates.
+            drone: Drone to locate.
+
+        Returns:
+            The end zone coordinates if the drone is delivered, the
+            middle of its current link if it is in flight, and the
+            coordinates of the zone it sits on otherwise.
         """
         if drone.delivered:
             end = graph.get_end().coord
@@ -99,7 +185,15 @@ class Simulator:
         return (float(pos[0]), float(pos[1]))
 
     def _snapshot(self, graph: Graph) -> Frame:
-        """snap the position and delivered flag of every drone."""
+        """Snap the position and delivered flag of every drone.
+
+        Args:
+            graph: Zone network holding the zone coordinates.
+
+        Returns:
+            A :data:`Frame` of the fleet as it stands, ready to be
+            appended to :attr:`history`.
+        """
         frame: Frame = []
         for drone in self.drones:
             frame.append((drone.id, self._drone_coord(graph, drone),
@@ -107,10 +201,23 @@ class Simulator:
         return frame
 
     def run(self, graph: Graph) -> int:
-        """
-            make every drone move on the path
-            and snap every turn in history cause we will need this
-            in  the vizualiser print every turn the move
+        """Move the whole fleet until every drone is delivered.
+
+        Each turn the fleet is sorted by progress, the most advanced
+        drones moving first so they free their zone for the ones
+        behind. A drone then either lands on the next zone, takes off
+        over a restricted zone, which costs it a second turn, or waits
+        on its current zone when the link or the target zone is
+        saturated. The moves are printed and a snapshot is appended to
+        :attr:`history`, plus the initial one taken before the first
+        turn.
+
+        Args:
+            graph: Zone network holding the capacities, the zone types
+                and the end zone.
+
+        Returns:
+            The number of turns the delivery took.
         """
         turns = 0
         self.history.append(self._snapshot(graph))
