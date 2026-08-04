@@ -1,15 +1,27 @@
+"""Syntactic validation of Fly-in map files.
+
+Checks a map against the format described in the subject, in two
+passes: whole-file rules first, such as the presence of a unique start
+and end zone, then line-by-line rules on metadata and connections.
+Problems are collected rather than raised, so a single run reports
+them all with their line number.
+"""
 from glob import glob
 from enum import Enum
 import re
 
 
 class HubName(Enum):
+    """Line keys that declare a zone."""
+
     HUB = "hub"
     START_HUB = "start_hub"
     END_HUB = "end_hub"
 
 
 class KeyName(Enum):
+    """Every line key a map file may open with."""
+
     HUB = "hub"
     START_HUB = "start_hub"
     END_HUB = "end_hub"
@@ -18,16 +30,22 @@ class KeyName(Enum):
 
 
 class NameMetaData(Enum):
+    """Metadata keys allowed inside a zone declaration."""
+
     ZONE = "zone"
     COLOR = "color"
     MAX_D = "max_drones"
 
 
 class NameMetaDataC(Enum):
+    """Metadata keys allowed inside a connection declaration."""
+
     MAX_LINK = "max_link_capacity"
 
 
 class KeyNameZone(Enum):
+    """Accepted values of the ``zone`` metadata key."""
+
     NORMAL = "normal"
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
@@ -35,14 +53,37 @@ class KeyNameZone(Enum):
 
 
 class Parsing():
+    """Syntax validator for a single map file.
+
+    Only tells whether a file can be read, never what it means:
+    turning valid lines into zones and connections is the job of the
+    translator, which subclasses this one.
+
+    Attributes:
+        path: Glob pattern of the map to read.
+        data: Lines of the file, blanks and comments included, filled
+            by :meth:`_load_data_from_file`.
+    """
+
     def __init__(self, path: str) -> None:
+        """Prepare a validator for the map matched by ``path``.
+
+        Args:
+            path: Glob pattern; the first match is the file read.
+        """
         self.path = path
         self.data: list[str] = []
 
-    """
-        Load the data forme the files with the path gived
-    """
     def _load_data_from_file(self) -> None:
+        """Read the map file into ``data``, one entry per line.
+
+        The path is expanded as a glob and only the first match is
+        kept, which is what lets a flag name a map by prefix.
+
+        Raises:
+            IndexError: If the pattern matches no file at all.
+            OSError: If the file exists but cannot be read.
+        """
         data_str = ""
         path = self.path
         path_list = glob(path)
@@ -52,29 +93,42 @@ class Parsing():
             data_str = f.read()
             self.data = data_str.split("\n")
 
-    """
-        Print the data for some debug
-    """
     def _print_data(self) -> None:
+        """Reload the file and print every line, for debugging."""
         self._load_data_from_file()
         for line in self.data:
             print(line)
 
-    """
-        Skip the line with # make like a commentary line
-        If the # is on the same line like the connection hub or whatever he
-        will not be ignored so be carefull about this
-    """
     def _ignore_hashtag(self, line: str) -> bool:
+        """Tell whether a line is a comment.
+
+        Only a whole-line comment counts. A ``#`` sitting after a
+        declaration does not open a comment, so it stays part of the
+        line and makes the later checks fail.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            True if the line starts with ``#`` once stripped.
+        """
         line_striped = line.strip()
         if line_striped.startswith("#"):
             return True
         return False
 
-    """
-        Verify if the first line is nb_drones
-    """
     def _first_line(self, line: str, index: int) -> bool:
+        """Check the fleet size declaration opening the file.
+
+        Args:
+            line: Raw line to check.
+            index: Rank of the line among the meaningful ones; only
+                rank 0 may carry the declaration.
+
+        Returns:
+            True if the line reads ``nb_drones: <n>`` with ``n`` a
+            strictly positive integer.
+        """
         if index != 0:
             return False
         line_strip = line.strip()
@@ -91,20 +145,36 @@ class Parsing():
             return False
         return True
 
-    """
-        Skip empty line with or whatever
-    """
     def _skip_line(self, line: str) -> bool:
+        """Tell whether a line is blank.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            True if nothing is left once the line is stripped.
+        """
         line_strip = line.strip()
         if line_strip == "":
             return True
         return False
 
-    """
-        verify if hub is unique
-    """
     def _unique_hub(self, data: list[str], name_hub: str
                     ) -> tuple[bool, int, str]:
+        """Check that a zone keyword is declared at most once.
+
+        The keyword is also rejected when it hides inside a longer
+        key, so a typo such as ``my_start_hub`` is caught here.
+
+        Args:
+            data: Lines of the map file.
+            name_hub: Keyword to count, ``"start_hub"`` for instance.
+
+        Returns:
+            A ``(ok, line, message)`` triplet: ``ok`` is False on
+            error, ``line`` is the 1-based line reached, and
+            ``message`` describes the problem, empty on success.
+        """
         len_nh = 0
         index = 1
         for line in data:
@@ -123,6 +193,15 @@ class Parsing():
         return (True, index, "")
 
     def _start_end_present(self, data: list[str]) -> tuple[bool, int, str]:
+        """Check that both a start and an end zone are declared.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            A ``(ok, line, message)`` triplet, ``line`` being -1 on
+            error since the failure belongs to no single line.
+        """
         start = False
         end = False
         for line in data:
@@ -135,11 +214,19 @@ class Parsing():
             return (False, -1, "Must have one start_hub or end_hub")
         return (True, 0, "")
 
-    """
-        verify if the line is splitted in two
-    """
     def _is_len_split_two_point(self, data: list[str]
                                 ) -> tuple[bool, int, str]:
+        """Check that every line carries exactly one colon.
+
+        Blank and comment lines are skipped.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            A ``(ok, line, message)`` triplet pointing at the first
+            line holding no colon or several of them.
+        """
         index = 1
         for line in data:
             if self._skip_line(line):
@@ -155,17 +242,33 @@ class Parsing():
             index += 1
         return (True, index, "")
 
-    """
-        get the main keys in index 0
-    """
     def _get_main_keys(self, data: list[str]) -> list[str]:
+        """Collect what stands before the colon on every line.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            One entry per input line, blanks and comments included,
+            so the result stays aligned on ``data``.
+        """
         keys = [line.strip().split(":")[0] for line in data]
         return keys
 
-    """
-        check for the name after the two point if he is unique
-    """
     def _unique_name_hub(self, data: list[str]) -> tuple[bool, int, str]:
+        """Check that no two zones share a name.
+
+        Connection lines are skipped, blanks and comments too. A name
+        is also rejected when it holds anything but word characters,
+        which is what forbids dashes and spaces.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            A ``(ok, line, message)`` triplet pointing at the first
+            malformed or repeated name.
+        """
         names: set[str] = set()
         index = 1
         for line in data:
@@ -187,18 +290,36 @@ class Parsing():
             index += 1
         return (True, index, "")
 
-    """
-        to get the first key in the split can be usefull
-    """
     def _get_first_key(self, line: str) -> str:
+        """Give what stands before the first colon of a line.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            The stripped key, or the whole line when it carries no
+            colon.
+        """
         line_s = line.split(":")
         return line_s[0].strip()
 
-    """
-        get the name and verify if the name is normed
-    """
     def _get_name_in_line(self, line: str, index: int
                           ) -> tuple[bool, int, str]:
+        """Read the zone name declared on a line.
+
+        Only the first token after the colon is looked at, and it has
+        to be made of word characters alone.
+
+        Args:
+            line: Raw line from the map file.
+            index: Line number, passed through untouched so callers
+                can report it.
+
+        Returns:
+            A ``(ok, index, name)`` triplet. On failure ``name``
+            holds the offending token instead, empty when the line
+            carries no usable colon.
+        """
         line_s = line.split(":")
         regex = r"^(\w+)$"
         name: str = ""
@@ -214,10 +335,19 @@ class Parsing():
             break
         return (True, index, name)
 
-    """
-        get the coord in line and verify if its normed
-    """
     def _get_coord_in_line(self, line: str) -> tuple[bool, tuple[int, int]]:
+        """Read the coordinates declared on a zone line.
+
+        Every token after the colon reading as a signed integer is
+        collected, and there must be exactly two of them.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            A ``(ok, coord)`` pair, ``coord`` falling back to
+            ``(0, 0)`` when the line holds no usable pair.
+        """
         regex = r"^[+-]?\d+$"
         list_int: list[str] = []
         line_s = line.split(":")
@@ -233,10 +363,21 @@ class Parsing():
             return (False, (0, 0))
         return (True, (int(list_int[0]), int(list_int[1])))
 
-    """
-        verify if the metada is normed or not in the extern not in detail
-    """
     def _get_metadata_in_line(self, line: str) -> tuple[bool, str]:
+        """Extract the bracket block closing a line.
+
+        The block is only accepted at the very end of the line, so
+        anything trailing after the closing bracket is an error. The
+        keys themselves are left to :meth:`_parse_metadata`.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            A ``(ok, metadata)`` pair, ``metadata`` holding what sits
+            between the brackets, empty when the line carries none.
+            On failure it holds the misplaced block instead.
+        """
         metadata_str: str = ""
         line = line.strip()
         match = re.search(r"\s+\[(.*?)\]", line)
@@ -250,10 +391,23 @@ class Parsing():
             metadata_str.strip()
         return (True, metadata_str)
 
-    """
-        verify the keys in the metadata
-    """
     def _parse_metadata(self, metadata: str, keys: set[str]) -> bool:
+        """Check the keys and values of a metadata block.
+
+        Every entry must read ``key=value`` with a key taken from
+        ``keys``, and no key may appear twice since each one is
+        consumed as it is met. A ``zone`` value has to name a known
+        zone type, and a capacity has to be a strictly positive
+        integer.
+
+        Args:
+            metadata: Block content, brackets already stripped.
+            keys: Keys allowed here, which differ between a zone and
+                a connection.
+
+        Returns:
+            True if every entry is well formed.
+        """
         data = metadata.strip().split(" ")
         keys_c = keys.copy()
         for tmp in data:
@@ -276,10 +430,19 @@ class Parsing():
                 return False
         return True
 
-    """
-        verify if there is some metadata
-    """
     def _there_is_metadata(self, line: str) -> bool:
+        """Tell whether a line seems to carry a metadata block.
+
+        Decided by counting the tokens after the colon: a zone needs
+        a name and two coordinates, a connection only a pair of
+        names, so anything beyond that must be a block.
+
+        Args:
+            line: Raw line from the map file.
+
+        Returns:
+            True if a block seems present, without checking it.
+        """
         line_s = line.split(":")
         name = line_s[0]
         index_md = 2 if name == "connection" else 3
@@ -289,11 +452,17 @@ class Parsing():
             return False
         return True
 
-    """
-        parse the data connection to see if he is normed and
-        get the data connection
-    """
     def _parse_data_connection(self, line: str) -> tuple[bool, set[str]]:
+        """Read the pair of zones a connection line links.
+
+        Args:
+            line: Raw connection line from the map file.
+
+        Returns:
+            A ``(ok, names)`` pair. ``names`` is a set, so the two
+            ends are unordered and a zone linked to itself collapses
+            to a single entry, which the later checks reject.
+        """
         conn_set: set[str] = set()
         data = line.strip().split(":")[1].strip().split(" ")
         connection = data[0].split("-")
@@ -303,41 +472,74 @@ class Parsing():
         conn_set.add(connection[1])
         return (True, conn_set)
 
-    """
-        get a set of names hub
-    """
     def _get_names_hub(self) -> set[str]:
+        """Collect every token standing in zone name position.
+
+        No line is filtered out, so connection lines and blanks throw
+        in their own token too. The result is only meant to be
+        intersected with a connection pair, where those leftovers
+        cannot match.
+
+        Returns:
+            Zone names read across the file, plus the leftovers of
+            the lines declaring no zone.
+        """
         names = set()
         for line in self.data:
             names.add(self._get_name_in_line(line, 0)[2])
         return names
 
-    """
-        verify if the name exist in the connection proposed
-    """
     def _connection_names_exist(self, names: set[str], connection: set[str]
                                 ) -> bool:
+        """Check that both ends of a connection name known zones.
+
+        Args:
+            names: Zone names declared in the file.
+            connection: Pair of names read on the connection line.
+
+        Returns:
+            True when both ends are known, which also rules out a
+            zone linked to itself since such a pair holds one name.
+        """
         verif_set = names.intersection(connection)
         if len(verif_set) != 2:
             return False
         return True
 
-    """
-        verify if the connection already exist or not
-        True if do not exist False if he exist
-    """
     def _uniq_connection(self, connections: list[set[str]],
                          connection: set[str]) -> bool:
+        """Check that a connection was not already declared.
+
+        Ends being held in sets, ``a-b`` and ``b-a`` count as the
+        same connection.
+
+        Args:
+            connections: Pairs already accepted.
+            connection: Pair being checked.
+
+        Returns:
+            True when the connection is new, False when it repeats
+            one of ``connections``.
+        """
         for conn in connections:
             res = conn.intersection(connection)
             if len(res) == 2:
                 return False
         return True
 
-    """
-        verify if the coord is unique or not
-    """
     def _unique_coord_hub(self, data: list[str]) -> tuple[bool, int, str]:
+        """Check that no two zones sit on the same coordinates.
+
+        Connection and fleet size lines are skipped, blanks and
+        comments too.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            A ``(ok, line, message)`` triplet pointing at the first
+            unreadable or repeated pair of coordinates.
+        """
         coords: set[tuple[int, int]] = set()
         index = 1
         for line in data:
@@ -362,10 +564,17 @@ class Parsing():
             index += 1
         return (True, index, "")
 
-    """
-        verify if the key is valid or not
-    """
     def _is_key_valid(self, data: list[str]) -> tuple[bool, int, str]:
+        """Check that every line opens with a known key.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            A ``(ok, line, message)`` triplet pointing at the first
+            line whose key is none of ``hub``, ``start_hub``,
+            ``end_hub``, ``connection`` or ``nb_drones``.
+        """
         keys = self._get_main_keys(data)
         index = 1
         verif_key = {
@@ -387,13 +596,26 @@ class Parsing():
             index += 1
         return (True, index, "")
 
-    """
-        Use all the little functions i parse in two step
-        i check key, uniq hub, start end present, the norm on the data
-        and after this step i check the metadata and nb_drones if on first line
-    """
-
     def parse_data(self) -> list[tuple[bool, int, str]]:
+        """Validate the whole map file and report every problem.
+
+        Runs in two passes. The first one checks the file as a whole,
+        its keys, its unique zones and their coordinates, and gives
+        up as soon as one of those fails, since the second pass would
+        then report errors caused by the first ones. The second pass
+        walks the lines and checks the fleet size declaration, the
+        metadata blocks and the connections.
+
+        Returns:
+            One ``(ok, line, message)`` triplet per problem found,
+            ``line`` counting from 1 across the whole file, blanks
+            and comments included. An empty list means the map is
+            valid.
+
+        Raises:
+            IndexError: If the pattern matches no file at all.
+            OSError: If the file exists but cannot be read.
+        """
         self._load_data_from_file()
         connections: list[set[str]] = []
         error_log: list[tuple[bool, int, str]] = []
