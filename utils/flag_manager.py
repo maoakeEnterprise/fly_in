@@ -1,15 +1,40 @@
+"""Command line interface of the Fly-in simulator.
+
+Declares one flag per shipped map plus a ``--graph`` switch, and turns
+the raised flag back into the map path the parser has to read.
+"""
 import argparse
 
 
 class FlagManager:
+    """Declare, parse and read back the command line flags.
+
+    Exactly one map flag may be raised per run. The map flags are not
+    declared as a mutually exclusive group, so that rule is enforced
+    afterwards by :meth:`_flag_check`.
+
+    Attributes:
+        args: Namespace filled by :meth:`init_args`, or None while the
+            command line has not been parsed yet.
+    """
+
     def __init__(self) -> None:
+        """Create a manager holding no parsed arguments yet."""
         self.args: argparse.Namespace | None = None
 
-    """
-        define every flag one flag for each map
-        and default launch to a custom map
-    """
     def init_args(self, arglist: list[str] | None) -> None:
+        """Declare every flag and parse the command line.
+
+        Each map flag takes an optional value: raised bare it falls
+        back to the map it is named after, and given a value it uses
+        that path instead, which allows running a custom map. Flags
+        left down keep the string ``"None"`` so :meth:`_flag_check`
+        can count them.
+
+        Args:
+            arglist: Arguments to parse. Pass None to read the real
+                command line; a list is mainly useful for tests.
+        """
         parser = argparse.ArgumentParser(
             prog="Fly in",
             description="Path finding for drones"
@@ -104,10 +129,18 @@ class FlagManager:
             args = parser.parse_args()
         self.args = args
 
-    """
-        get every flag
-    """
     def _get_args_values(self) -> list[str]:
+        """Flatten the parsed namespace into an ordered value list.
+
+        The order is fixed: the eleven map flags first, then the
+        ``--graph`` switch. :meth:`_flag_check` relies on that layout
+        to count the flags left down.
+
+        Returns:
+            One entry per flag, ``"None"`` for a map flag left down,
+            and ``"graphed"`` or ``"not_graph"`` for the last entry.
+            An empty list if the command line was never parsed.
+        """
         values: list[str] = []
         args = self.args
 
@@ -129,10 +162,23 @@ class FlagManager:
 
         return values
 
-    """
-        check if the flags are good
-    """
     def _flag_check(self, values: list[str]) -> bool:
+        """Ensure a single map flag was raised.
+
+        Out of the twelve values, the ``--graph`` one is never
+        ``"None"``, so ten flags left down means exactly one of the
+        eleven map flags is up.
+
+        Args:
+            values: Flag values as returned by
+                :meth:`_get_args_values`.
+
+        Returns:
+            True when exactly one map flag is up.
+
+        Raises:
+            ValueError: If no map flag or several of them were given.
+        """
         none_count = values.count("None")
 
         if none_count != 10:
@@ -140,10 +186,16 @@ class FlagManager:
                              " flag up flag up should be one")
         return True
 
-    """
-        get the path from the flag
-    """
     def get_path_from_flag(self) -> str:
+        """Return the map path selected on the command line.
+
+        Returns:
+            The glob pattern of the chosen map, taken either from the
+            flag default or from the value the user passed to it.
+
+        Raises:
+            ValueError: If no map flag or several of them were given.
+        """
         v = self._get_args_values()
         path = ""
 
@@ -155,6 +207,15 @@ class FlagManager:
         return path
 
     def is_graphed(self) -> bool:
+        """Tell whether the run asked for the graphical display.
+
+        Returns:
+            True if ``--graph`` was raised, False if the simulation
+            should only print its turns to the terminal.
+
+        Raises:
+            ValueError: If no map flag or several of them were given.
+        """
         v = self._get_args_values()
 
         self._flag_check(v)
