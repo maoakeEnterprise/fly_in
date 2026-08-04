@@ -1,3 +1,9 @@
+"""Animated replay of a Fly-in simulation.
+
+Draws the map once with matplotlib, then walks the history recorded by
+:mod:`utils.simulator` turn by turn, moving the fleet over the fixed
+background. The window closes on its own shortly after the last turn.
+"""
 import matplotlib.pyplot as plt
 from matplotlib.backend_bases import KeyEvent
 from matplotlib.animation import FuncAnimation
@@ -9,21 +15,60 @@ from utils import ZoneType
 from utils.graph import Graph, Node
 
 Frame = list[tuple[int, tuple[float, float], bool]]
+"""State of the whole fleet at one turn.
+
+Mirrors the alias of :mod:`utils.simulator`: one tuple per drone,
+holding its id, its position as floats and whether it is delivered.
+"""
 
 
 class Visualizer:
+    """Animation window replaying a finished simulation.
+
+    The map is drawn once and never redrawn; only the drone markers
+    are cleared and rebuilt at each turn, which is why the animation
+    runs without blitting.
+
+    Attributes:
+        graph: Zone network to draw, read through its ``complete_``
+            collections so blocked zones stay visible.
+        history: Turns to replay, as recorded by the simulator.
+        interval: Milliseconds a turn stays on screen, reused as the
+            delay before the window closes.
+        paused: Whether the animation is currently on hold.
+        closed: Whether the closing timer was already armed, so the
+            last turn cannot arm it twice.
+        fig: Figure holding the drawing, set by :meth:`render`.
+        anim: Running animation, set by :meth:`render`.
+        timer: One-shot timer closing the window, set by
+            :meth:`_shedule_close`.
+    """
+
     def __init__(self, graph: Graph, history: list[Frame],
                  interval: int = 800) -> None:
+        """Prepare a replay, without drawing anything yet.
+
+        Args:
+            graph: Zone network to draw.
+            history: Turns to replay, the first entry being the fleet
+                before any move.
+            interval: Milliseconds a turn stays on screen.
+        """
         self.graph = graph
         self.history = history
         self.interval = interval
         self.paused = False
         self.closed = False
 
-    """
-        will draw the edges/connections on the graph
-    """
     def _draw_network(self, ax: Axes) -> None:
+        """Draw every connection of the map as a black segment.
+
+        Links being stored in both directions, each pair of zones is
+        remembered once drawn so the segment is not drawn twice.
+
+        Args:
+            ax: Axes to draw on.
+        """
         drawn = set()
         for name, edges in self.graph.complete_edges.items():
             if name not in self.graph.complete_nodes:
@@ -37,10 +82,22 @@ class Visualizer:
                 x1, y1 = self.graph.complete_nodes[edge.dst].coord
                 ax.plot([x0, x1], [y0, y1], color="black", lw=1.4, zorder=1)
 
-    """
-        to define the color border
-    """
     def _border(self, node: Node) -> tuple[str, float]:
+        """Give the outline telling what kind of zone this is.
+
+        The zone color itself comes from the map file, so the role of
+        the zone is carried by its border instead. Being the start or
+        the end wins over the zone type, which the models guarantee is
+        normal there anyway.
+
+        Args:
+            node: Zone about to be drawn.
+
+        Returns:
+            A ``(color, width)`` pair: green for the start, red for
+            the end, purple for a restricted zone, a thick gray for a
+            blocked one, and a thin black for any other.
+        """
         if node.start:
             return ("green", 2.4)
         if node.end:
@@ -51,10 +108,12 @@ class Visualizer:
             return ("gray", 4.4)
         return ("black", 1.1)
 
-    """
-        draw the hub/node
-    """
     def _draw_hub(self, ax: Axes) -> None:
+        """Draw every zone as a filled dot carrying its name.
+
+        Args:
+            ax: Axes to draw on.
+        """
         for name, node in self.graph.complete_nodes.items():
             x, y = node.coord
             edgecolor, linewidth = self._border(node)
@@ -63,11 +122,26 @@ class Visualizer:
             ax.annotate(name, (x, y), xytext=(0, 20),
                         textcoords="offset points", ha="center", zorder=6)
 
-    """
-        update the position for each drone on the map
-    """
     def _update(self, ax: Axes, idx: int, dynamic: list[Artist]
                 ) -> list[Artist]:
+        """Redraw the fleet for one turn of the history.
+
+        Drones sharing a position are drawn as a single marker
+        carrying how many they are, which keeps a crowded zone
+        readable and shows the capacities at work. The markers of the
+        previous turn are removed first, the map underneath being left
+        untouched.
+
+        Args:
+            ax: Axes to draw on.
+            idx: Turn to draw, an index into ``history``.
+            dynamic: Markers of the previous turn, emptied and refilled
+                in place.
+
+        Returns:
+            ``dynamic``, now holding the markers of this turn, as
+            :class:`~matplotlib.animation.FuncAnimation` expects.
+        """
         counts: dict[tuple[float, float], int] = {}
         for art in dynamic:
             art.remove()
@@ -93,10 +167,14 @@ class Visualizer:
                 self._shedule_close()
         return dynamic
 
-    """
-        some legend to explain the color code used
-    """
     def _legend(self) -> list[Line2D]:
+        """Build the legend explaining the outlines used on the map.
+
+        Returns:
+            One dummy marker per border meaning of :meth:`_border`,
+            plus one for a zone whose color the map file got wrong and
+            which the graph fell back to gray.
+        """
         return [
             Line2D([0], [0], marker="o", color="white", label="start",
                    markerfacecolor="white", markeredgecolor="green",
@@ -116,10 +194,15 @@ class Visualizer:
                    markeredgecolor="black", markersize=11),
         ]
 
-    """
-        to make a pause on the animation used to debug
-    """
     def _on_key(self, event: KeyEvent) -> None:
+        """Pause or resume the replay when space is pressed.
+
+        Any other key is ignored. Useful to stop on a turn and read
+        the fleet, since a busy map goes by fast.
+
+        Args:
+            event: Key press reported by the matplotlib canvas.
+        """
         if event.key != " ":
             return
         if self.paused:
@@ -128,10 +211,14 @@ class Visualizer:
             self.anim.pause()
         self.paused = not self.paused
 
-    """
-        close the window
-    """
     def _shedule_close(self) -> None:
+        """Arm a one-shot timer closing the window.
+
+        Waits one interval before closing, so the last turn stays on
+        screen as long as the others instead of flashing by. Called
+        from every marker of the last turn, hence the ``closed`` guard
+        making the timer be armed only once.
+        """
         if self.closed:
             return
         self.closed = True
@@ -142,10 +229,13 @@ class Visualizer:
         self.timer.add_callback(lambda: plt.close(self.fig))
         self.timer.start()
 
-    """
-        to draw everything and put the animation in the class FuncAnimation
-    """
     def render(self) -> None:
+        """Draw the map, then run the replay until the window closes.
+
+        Blocks on :func:`~matplotlib.pyplot.show` until the closing
+        timer fires or the user closes the window. Does nothing at all
+        when the history is empty.
+        """
         if not self.history:
             return
         dynamic: list[Artist] = []
