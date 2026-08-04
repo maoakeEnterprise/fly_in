@@ -24,7 +24,7 @@ def main() -> None:
 
         simulator = Simulator()
         simulator.load_drones([pathfinder.pathing],
-                              graph.calcul_max_turns([pathfinder.pathing]))
+                              graph.spread_drones([pathfinder.pathing]))
         turns = simulator.run(graph)
         vizualiser = Visualizer(graph, simulator.history, interval=800)
         vizualiser.render()

@@ -1,3 +1,9 @@
+"""Graph interface of the Fly-in simulator.
+
+Builds the zone network out of ``Node`` and ``Edge`` objects and finds
+the cheapest route from the start zone to the end zone, which the
+simulator then replays turn by turn.
+"""
 from enum import Enum
 from utils import Connection, Hub
 import heapq
@@ -5,6 +11,13 @@ import itertools
 
 
 class ZoneType(Enum):
+    """Movement cost class of a zone.
+
+    ``restricted`` costs 2 turns to enter, ``blocked`` cannot be
+    entered at all, ``normal`` and ``priority`` both cost 1 turn,
+    ``priority`` being preferred on equal cost during pathfinding.
+    """
+
     NORMAL = "normal"
     BLOCKED = "blocked"
     RESTRICTED = "restricted"
@@ -12,6 +25,12 @@ class ZoneType(Enum):
 
 
 class ColorType(Enum):
+    """Colors the visualizer knows how to draw.
+
+    A zone whose color is missing from this enum falls back to gray,
+    see :meth:`Graph.set_color`.
+    """
+
     BLUE = 'blue'
     ORANGE = 'orange'
     GREEN = 'green'
@@ -32,8 +51,36 @@ class ColorType(Enum):
 
 
 class Node:
+    """A zone of the map, with its movement cost and its capacity.
+
+    ``start`` and ``end`` are derived from the ``type_hub`` given at
+    construction; that raw value is not kept as an attribute.
+
+    Attributes:
+        name: Unique zone name, used as key everywhere in the graph.
+        coord: Position of the zone, used by the visualizer.
+        color: Color to draw the zone with, already validated.
+        max_drones: How many drones may sit on the zone at once.
+        zone_type: Cost class of the zone, see :class:`ZoneType`.
+        start: True if the fleet takes off from this zone.
+        end: True if this zone is the delivery target.
+    """
+
     def __init__(self, name: str, coord: tuple[int, int], color: str,
                  max_drones: int, zone_type: str, type_hub: str) -> None:
+        """Build a zone and derive its start and end flags.
+
+        Args:
+            name: Unique zone name.
+            coord: Position of the zone on the map.
+            color: Color to draw the zone with.
+            max_drones: Simultaneous drone capacity of the zone.
+            zone_type: One of the :class:`ZoneType` values.
+            type_hub: ``"start_hub"``, ``"end_hub"`` or ``"hub"``.
+
+        Raises:
+            ValueError: If ``zone_type`` is not a known zone type.
+        """
         self.name = name
         self.coord = coord
         self.color: str = color
@@ -46,20 +93,22 @@ class Node:
         if type_hub == "end_hub":
             self.end = True
 
-    """
-        get the cost to enter on a hub cause of restricted one or two
-    """
     def entry_cost(self) -> int:
+        """Give the number of turns needed to enter this zone.
+
+        Returns:
+            0 for the start zone, since the fleet is already there,
+            2 for a restricted zone, and 1 for any other zone. This
+            is the weight :meth:`Graph.dijkstra_alg` sums up.
+        """
         if self.start is True:
             return (0)
         if (self.zone_type == ZoneType.RESTRICTED):
             return (2)
         return (1)
 
-    """
-        debug function to get some data on the node
-    """
     def print_node(self) -> None:
+        """Print every field of the zone, for debugging."""
         print(f"Name: {self.name}")
         print(f"Coord: {self.coord}")
         print(f"Color: {self.color}")
@@ -70,40 +119,90 @@ class Node:
 
 
 class Edge:
+    """One direction of a connection between two zones.
+
+    A map connection is bidirectional, so the loaders store it as two
+    ``Edge`` objects, one in each adjacency list.
+
+    Attributes:
+        dst: Name of the zone this edge leads to.
+        max_link: How many drones may cross the connection at once.
+    """
+
     def __init__(self, dst: str, max_link: int) -> None:
+        """Build an edge leading to ``dst``.
+
+        Args:
+            dst: Name of the destination zone.
+            max_link: Simultaneous capacity of the connection.
+        """
         self.dst = dst
         self.max_link = max_link
 
-    """
-        debug function
-    """
     def print_edge(self) -> None:
+        """Print the destination and capacity, for debugging."""
         print(f"dest: {self.dst}")
         print(f"max_link: {self.max_link}")
 
 
 class Path_Finder:
+    """Result of a pathfinding run, consumed by the simulator.
+
+    Attributes:
+        pathing: Ordered zone names, start first and end last.
+        turns: Total entry cost of ``pathing``, in turns, for a
+            single drone flying it alone.
+        priority_count: How many priority zones the route crosses,
+            used to break ties between routes of equal cost.
     """
-        will use this to stock the number of turns and pathing for the drones
-    """
+
     def __init__(self, pathing: list[str], turns: int, prio: int):
+        """Store the outcome of a pathfinding run.
+
+        Args:
+            pathing: Ordered zone names from start to end.
+            turns: Total entry cost of the route.
+            prio: Number of priority zones crossed.
+        """
         self.pathing: list[str] = pathing
         self.turns: int = turns
         self.priority_count: int = prio
 
 
 class Graph:
+    """Zone network the drones fly through.
+
+    Two views of the map are kept. nodes and edges exclude the
+    blocked zones and are what the pathfinding walks; complete_nodes
+    and complete_edges keep every zone so the visualizer can still
+    draw the blocked ones.
+
+    Attributes:
+        nodes: Traversable zones indexed by name.
+        edges: Adjacency list over nodes, both directions stored.
+        complete_nodes: Every zone, blocked ones included.
+        complete_edges: Adjacency list over complete_nodes.
+        total_drones: Fleet size read from nb_drones.
+    """
     def __init__(self, total_drones: int):
+        """Create an empty graph for a fleet of total_drones."""
         self.nodes: dict[str, Node] = {}
         self.complete_nodes: dict[str, Node] = {}
         self.edges: dict[str, list[Edge]] = {}
         self.complete_edges: dict[str, list[Edge]] = {}
         self.total_drones = total_drones
 
-    """
-        load the edges need to be call in first before the algo
-    """
     def load_edges(self, connections: list[Connection]) -> None:
+        """Fill the traversable adjacency list.
+
+        Both directions are stored. A connection is skipped when
+        either end is missing from ``nodes``, which is how blocked
+        zones get cut out of the pathfinding graph, so
+        :meth:`load_nodes` must run first.
+
+        Args:
+            connections: Parsed connections to turn into edges.
+        """
         for connection in connections:
             a, b = connection.name_hub1, connection.name_hub2
             if a not in self.nodes or b not in self.nodes:
@@ -115,10 +214,16 @@ class Graph:
             self.edges[a].append(Edge(b, connection.max_link))
             self.edges[b].append(Edge(a, connection.max_link))
 
-    """
-        load complete with the blocked zone in this
-    """
     def load_commplete_edges(self, connections: list[Connection]) -> None:
+        """Fill the adjacency list that keeps the blocked zones.
+
+        Same work as :meth:`load_edges` but over ``complete_nodes``,
+        so the visualizer can still draw the connections leading to
+        blocked zones. :meth:`load_nodes` must run first.
+
+        Args:
+            connections: Parsed connections to turn into edges.
+        """
         for connection in connections:
             a, b = connection.name_hub1, connection.name_hub2
             if a not in self.complete_nodes or b not in self.complete_nodes:
@@ -130,21 +235,32 @@ class Graph:
             self.complete_edges[a].append(Edge(b, connection.max_link))
             self.complete_edges[b].append(Edge(a, connection.max_link))
 
-    """
-        try if the color is in ColorType if not i send a default color
-    """
     def set_color(self, color: str) -> str:
+        """Keep a color the visualizer supports, or fall back to gray.
+
+        Args:
+            color: Color read from the map file, possibly empty or
+                unsupported.
+
+        Returns:
+            ``color`` itself when it belongs to :class:`ColorType`,
+            ``"gray"`` otherwise.
+        """
         try:
             ColorType(color)
             return color
         except ValueError:
             return "gray"
 
-    """
-        load nodes with the hublist cause node = hub its the same
-        and load the complete zone with the blocked zone
-    """
     def load_nodes(self, hubs: list[Hub]) -> None:
+        """Turn the parsed zones into nodes of the graph.
+
+        Every zone lands in ``complete_nodes``; blocked ones are kept
+        out of ``nodes`` so the pathfinding never walks them.
+
+        Args:
+            hubs: Zones produced by the translator.
+        """
         for hub in hubs:
             node = Node(
                 hub.name,
@@ -159,69 +275,102 @@ class Graph:
                 continue
             self.nodes[hub.name] = node
 
-    """
-        debug nodes print data for each node
-    """
     def debug_nodes(self) -> None:
+        """Print every traversable node, for debugging."""
         for key, node in self.nodes.items():
             print("=======================")
             print(key.upper())
             node.print_node()
 
-    """
-        debug edges print data for each edge
-    """
     def debug_edges(self) -> None:
+        """Print every edge grouped by origin zone, for debugging."""
         for key, edges in self.edges.items():
             print("=======================")
             print(f"Origin: {key}")
             for edge in edges:
                 edge.print_edge()
 
-    """
-        get a node by the name
-    """
     def get_node(self, name: str) -> Node:
+        """Look up a traversable zone by its name.
+
+        Args:
+            name: Zone name to look up.
+
+        Returns:
+            The matching node.
+
+        Raises:
+            KeyError: If no traversable zone carries that name, which
+                covers the case of a blocked zone.
+        """
         return self.nodes[name]
 
-    """
-        get the start node
-    """
     def get_start(self) -> Node:
+        """Find the zone the fleet takes off from.
+
+        Returns:
+            The node whose ``start`` flag is set. The parser
+            guarantees exactly one such zone; were none flagged, the
+            last node visited would be returned instead.
+
+        Raises:
+            UnboundLocalError: If the graph holds no traversable zone
+                at all, leaving the fallback nothing to return.
+        """
         for node in self.nodes.values():
             if node.start is True:
                 return node
         return node
 
-    """
-        get the end node
-    """
     def get_end(self) -> Node:
+        """Find the zone the drones must be delivered to.
+
+        Returns:
+            The node whose ``end`` flag is set. The parser guarantees
+            exactly one such zone; were none flagged, the last node
+            visited would be returned instead.
+
+        Raises:
+            UnboundLocalError: If the graph holds no traversable zone
+                at all, leaving the fallback nothing to return.
+        """
         for node in self.nodes.values():
             if node.end is True:
                 return node
         return node
 
-    """
-        get the neighbors by the name of a node cause a
-        node can have many connections
-    """
     def get_neighbors(self, name: str) -> list[Edge]:
+        """List the edges leaving a zone.
+
+        Args:
+            name: Name of the zone whose neighbors are wanted.
+
+        Returns:
+            One edge per connection leaving the zone, in load order.
+
+        Raises:
+            KeyError: If the zone is unknown or carries no
+                connection at all.
+        """
         return self.edges[name]
 
-    """
-        apply the dijkstra algorithm
-        we put in a tab dist for each node to inf like this
-        we can found if the node is explore or not and
-        tab prio_cnt is here to tie break if the cost to node A at
-        node B with different path as the same cost we check the number
-        of time each path get in a zone priority but its not enough so i add
-        another argument tie for final decision
-        settled is here to check if we already visited this node.
-        previous is here to stock the pathing
-        and heap is used to add and pop like the dijkstra example online.
-    """
     def dijkstra_alg(self) -> Path_Finder:
+        """Find the cheapest route from the start zone to the end one.
+
+        Weights come from :meth:`Node.entry_cost`, so a restricted
+        zone counts double. Ties on cost are settled in favour of the
+        route crossing the most priority zones, then by insertion
+        order so the heap comparison stays total.
+
+        Returns:
+            A :class:`Path_Finder` holding the ordered zone names,
+            the total cost in turns, and the number of priority zones
+            the route crosses.
+
+        Raises:
+            ValueError: If the end zone stays unreachable, its
+                distance still infinite once the heap is empty.
+        """
         start, end = self.get_start(), self.get_end()
         dist: dict[str, float] = {name: float("inf")
                                   for name in self.nodes.keys()}
@@ -264,10 +413,23 @@ class Graph:
             prio=prio_cnt[end.name]
         )
 
-    """
-        will be usefull to get the pathing complete in reverse
-    """
     def _get_path(self, prev: dict[str, str]) -> list[str]:
+        """Rebuild the route out of the predecessor table.
+
+        Walks backwards from the end zone up to the start one, then
+        flips the result.
+
+        Args:
+            prev: Table mapping each zone to the zone it was first
+                reached from, as filled by :meth:`dijkstra_alg`.
+
+        Returns:
+            Ordered zone names, start first and end last.
+
+        Raises:
+            KeyError: If the chain breaks before reaching the start
+                zone, meaning ``prev`` does not cover the route.
+        """
         end = self.get_end()
         start = self.get_start()
         path: list[str] = []
@@ -279,10 +441,19 @@ class Graph:
         path.reverse()
         return path
 
-    """
-        to get the cost and check if its not start
-    """
     def path_cost(self, path: list[str]) -> int:
+        """Sum the entry costs along a route.
+
+        The start zone is skipped, since the fleet is already there.
+
+        Args:
+            path: Ordered zone names, as returned by
+                :meth:`_get_path`.
+
+        Returns:
+            Number of turns one drone needs to fly the whole route
+            on its own.
+        """
         cost = 0
         for node in path:
             if self.nodes[node].start:
@@ -290,11 +461,20 @@ class Graph:
             cost += self.nodes[node].entry_cost()
         return cost
 
-    """
-        to get the minimum drone you can send on a path
-        we need to check the link capacity and the node capacity
-    """
     def _get_nb_drone_min(self, path: list[str]) -> int:
+        """Give the narrowest capacity found along a route.
+
+        Zone capacities and connection capacities are both taken into
+        account, the start zone excepted since it holds the whole
+        fleet at once.
+
+        Args:
+            path: Ordered zone names to measure.
+
+        Returns:
+            How many drones the route can carry side by side, that is
+            the smallest ``max_drones`` or ``max_link`` on it.
+        """
         nb_max = float("inf")
         for node in path:
             if self.nodes[node].start:
@@ -307,10 +487,23 @@ class Graph:
                         nb_max = min(nb_max, edge.max_link)
         return int(nb_max)
 
-    """
-        to get the max turn on every path give.
-    """
-    def calcul_max_turns(self, paths: list[list[str]]) -> list[int]:
+    def spread_drones(self, paths: list[list[str]]) -> list[int]:
+        """Share the fleet between routes to land as early as
+        possible.
+
+        Drones are handed out one at a time to the route with the
+        lowest projected arrival, that is its cost plus the drones
+        already queued on it, which assumes a single drone enters a
+        route per turn.
+
+        Args:
+            paths: Candidate routes, each an ordered list of zone
+                names.
+
+        Returns:
+            How many drones to send on each route, aligned on
+            ``paths``; the values sum up to ``total_drones``.
+        """
         count_d = [0] * len(paths)
         turn_paths = [self.path_cost(path) for path in paths]
         for _ in range(self.total_drones):
