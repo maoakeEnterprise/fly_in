@@ -281,9 +281,13 @@ class Parsing():
             if self._get_first_key(line) == "connection":
                 index += 1
                 continue
+            if self._get_first_key(line) == "nb_drones":
+                index += 1
+                continue
             res = self._get_name_in_line(line, index)
             name = res[2]
             if res[0] is False or name in names:
+                print("line", line)
                 return (False, index, "format name hub is not good or unique"
                                       "name hub")
             names.add(name)
@@ -679,8 +683,8 @@ class Parsing():
                 signal_drones = False
                 if not self._first_line(line, index):
                     error_log.append((False, true_index,
-                                      "the nb drone is not "
-                                      "present on the first line"))
+                                      "Something wrong with the "
+                                      "nb_drones"))
                     continue
             else:
                 key = self._get_first_key(line)
@@ -696,7 +700,8 @@ class Parsing():
                                                       metadata_key_hub)
                         if res_mp is False:
                             error_log.append((False, true_index,
-                                              "The key in metadata is wrong"))
+                                              "Something is wrong in metadata"
+                                              ))
                             continue
                 elif key == "connection":
                     res_cn = self._parse_data_connection(line)
@@ -708,12 +713,13 @@ class Parsing():
                     res_ce = self._connection_names_exist(names_hub, res_cn[1])
                     if res_ce is False:
                         error_log.append((False, true_index,
-                                          "Something is wrong with the name"))
+                                          "Something is wrong in the "
+                                          "connection"))
                         continue
                     res_uc = self._uniq_connection(connections, res_cn[1])
                     if res_uc is False:
                         error_log.append((False, true_index,
-                                          "The connection is not uniq"))
+                                          "Something wrong in connection"))
                         continue
                     connections.append(res_cn[1])
                     if self._there_is_metadata(line):
@@ -728,7 +734,7 @@ class Parsing():
                         if res_mp is False:
                             error_log.append((False, true_index,
                                               "Something is wrong "
-                                              "in the key metadata"))
+                                              "in this metadata"))
                             continue
             index += 1
             true_index += 1
