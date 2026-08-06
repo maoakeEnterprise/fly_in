@@ -363,6 +363,12 @@ class Parsing():
             return (False, (0, 0))
         return (True, (int(list_int[0]), int(list_int[1])))
 
+    def del_comment(self, data: list[str]) -> list[str]:
+        new_data: list[str] = []
+        for line in data:
+            new_data.append(line.split("#")[0])
+        return new_data
+
     def _get_metadata_in_line(self, line: str) -> tuple[bool, str]:
         """Extract the bracket block closing a line.
 
@@ -617,6 +623,7 @@ class Parsing():
             OSError: If the file exists but cannot be read.
         """
         self._load_data_from_file()
+        self.data = self.del_comment(self.data)
         connections: list[set[str]] = []
         error_log: list[tuple[bool, int, str]] = []
         key_name = {

@@ -196,6 +196,7 @@ class Translator(Parsing):
                 refuse.
         """
         self._load_data_from_file()
+        self.data = self.del_comment(self.data)
         self.nb_drones = self._get_nb_drones()
         for line in self.data:
             if self._skip_line(line):
