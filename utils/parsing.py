@@ -394,7 +394,7 @@ class Parsing():
         keys themselves are left to :meth:`_parse_metadata`.
 
         Args:
-            line: Raw line from the map file.
+            line: Raw line from l[stthe map file.
 
         Returns:
             A ``(ok, metadata)`` pair, ``metadata`` holding what sits
@@ -438,6 +438,8 @@ class Parsing():
             if len(k_v) != 2:
                 return False
             if k_v[0] in keys_c:
+                if k_v[0].strip() == "color" and k_v[1] == "":
+                    return False
                 if k_v[0].strip() == "zone":
                     if k_v[1].strip() not in KeyNameZone:
                         return False
