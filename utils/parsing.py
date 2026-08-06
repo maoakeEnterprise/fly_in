@@ -364,6 +364,19 @@ class Parsing():
         return (True, (int(list_int[0]), int(list_int[1])))
 
     def del_comment(self, data: list[str]) -> list[str]:
+        """Strip the comment part of every line.
+
+        Everything from the first ``#`` on is dropped, whole-line
+        comments becoming empty lines rather than disappearing, so the
+        result stays aligned on ``data`` and the line numbers reported
+        later keep pointing at the right place.
+
+        Args:
+            data: Lines of the map file.
+
+        Returns:
+            One entry per input line, comments removed.
+        """
         new_data: list[str] = []
         for line in data:
             new_data.append(line.split("#")[0])
