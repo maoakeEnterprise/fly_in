@@ -1,3 +1,10 @@
+"""A parsed link between two zones.
+
+Mirrors a connection line of the map file, before the graph turns it
+into the oriented edges the pathfinding walks through. The capacity is
+validated here, while the existence of both zones is checked later by
+the graph.
+"""
 from pydantic import BaseModel, Field
 
 

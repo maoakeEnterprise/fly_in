@@ -67,7 +67,8 @@ class Node:
     """
 
     def __init__(self, name: str, coord: tuple[int, int], color: str,
-                 max_drones: int, zone_type: str, type_hub: str) -> None:
+                 max_drones: int, zone_type: str, type_hub: str,
+                 total_drones: int) -> None:
         """Build a zone and derive its start and end flags.
 
         Args:
@@ -90,8 +91,10 @@ class Node:
         self.end = False
         if type_hub == "start_hub":
             self.start = True
+            self.max_drones = total_drones
         if type_hub == "end_hub":
             self.end = True
+            self.max_drones = total_drones
 
     def entry_cost(self) -> int:
         """Give the number of turns needed to enter this zone.
@@ -268,7 +271,8 @@ class Graph:
                 self.set_color(hub.color),
                 hub.max_drones,
                 hub.zone,
-                hub.type_hub
+                hub.type_hub,
+                self.total_drones
             )
             self.complete_nodes[hub.name] = node
             if hub.zone == ZoneType.BLOCKED.value:
@@ -353,6 +357,60 @@ class Graph:
                 connection at all.
         """
         return self.edges[name]
+
+    def get_node_from_coord(self, coord: tuple[float, float]) -> Node | None:
+        """Find the zone sitting at a position.
+
+        Reverse lookup used by the visualizer, which knows where a
+        drone is drawn but not which zone it stands on. The search runs
+        over ``complete_nodes``, so a blocked zone is matched too, and
+        the integer coordinates of the map are compared as floats
+        because the simulator works in floats.
+
+        Args:
+            coord: Position to match, exactly as the simulator
+                reports it.
+
+        Returns:
+            The node standing at that position, or None if the
+            position falls between two zones, which means the drone is
+            flying over a link rather than parked.
+        """
+        for _, node in self.complete_nodes.items():
+            x_int, y_int = node.coord
+            coord_test = (float(x_int), float(y_int))
+            if coord_test == coord:
+                return node
+        return None
+
+    def get_edge_from_coord(self, coord: tuple[float, float]
+                            ) -> tuple[str, Edge] | None:
+        """Find the link a drone in flight is halfway along.
+
+        Counterpart of :meth:`get_node_from_coord` for the positions it
+        rejects: a drone crossing a restricted link is drawn at the
+        midpoint of the two zones, so the midpoint of every connection
+        is recomputed and compared to the position. Each connection is
+        stored in both directions, so the first orientation that
+        matches is the one returned.
+
+        Args:
+            coord: Position to match, expected to be the midpoint of a
+                connection.
+
+        Returns:
+            The name of the source zone paired with the edge leaving
+            it, or None if no link has that midpoint.
+        """
+        for name, listedges in self.complete_edges.items():
+            x1, y1 = self.complete_nodes[name].coord
+            for edge in listedges:
+                dst = edge.dst
+                x2, y2 = self.complete_nodes[dst].coord
+                res = ((x1 + x2) / 2, (y1 + y2) / 2)
+                if res == coord:
+                    return (name, edge)
+        return None
 
     def dijkstra_alg(self) -> Path_Finder:
         """Find the cheapest route from the start zone to the end one.

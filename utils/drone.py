@@ -1,3 +1,12 @@
+"""Unit moved by the Fly-in simulator.
+
+Holds one drone and the route it was assigned when the fleet was
+spread over the paths. The drone owns no logic of its own: the
+simulator advances its index turn after turn and flips its flags, so
+this module is only the state carried between two turns.
+"""
+
+
 class Drone:
     """
     we give id for the drone to identify him

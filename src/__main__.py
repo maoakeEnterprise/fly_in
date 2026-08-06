@@ -26,8 +26,9 @@ def main() -> None:
         simulator.load_drones([pathfinder.pathing],
                               graph.spread_drones([pathfinder.pathing]))
         turns = simulator.run(graph)
-        vizualiser = Visualizer(graph, simulator.history, interval=800)
-        vizualiser.render()
+        if flag_manager.is_graphed():
+            vizualiser = Visualizer(graph, simulator.history, interval=800)
+            vizualiser.render()
         print(f"=== Simulation finished in {turns} turns ===")
     except ValueError as e:
         print("=======VALUE==ERROR========")
